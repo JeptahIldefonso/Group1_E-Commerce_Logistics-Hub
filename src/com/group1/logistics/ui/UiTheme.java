@@ -5,6 +5,7 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
@@ -47,6 +48,16 @@ public class UiTheme {
     public static final Color STOCK_LOW_TEXT = new Color(0xD9, 0x77, 0x06);
     public static final Color STOCK_OUT_TEXT = new Color(0xDC, 0x26, 0x26);
 
+    // Sidebar Design Tokens (Dark SaaS theme matching ElectronDB style)
+    public static final Color SIDEBAR_BG = new Color(0x11, 0x18, 0x27); // #111827 Dark slate
+    public static final Color SIDEBAR_HOVER = new Color(0x1F, 0x29, 0x37); // #1F2937
+    public static final Color SIDEBAR_ACTIVE = new Color(0x1E, 0x29, 0x3B); // #1E293B
+    public static final Color SIDEBAR_TEXT = new Color(0x9C, 0xA3, 0xAF); // #9CA3AF Muted gray
+    public static final Color SIDEBAR_TEXT_ACTIVE = Color.WHITE;
+    public static final Color SIDEBAR_ACCENT = new Color(0x25, 0x63, 0xEB); // #2563EB Blue accent
+    public static final Color SIDEBAR_CATEGORY = new Color(0x6B, 0x72, 0x80); // #6B7280 Muted label
+    public static final Color SIDEBAR_BORDER = new Color(0x1F, 0x29, 0x37);
+
     // Inline Feedback Bar Colors
     public static final Color FEEDBACK_SUCCESS_BG = new Color(0xDC, 0xFC, 0xE7);
     public static final Color FEEDBACK_SUCCESS_TEXT = new Color(0x14, 0x53, 0x2D);
@@ -56,19 +67,25 @@ public class UiTheme {
     public static final Color FEEDBACK_READY_TEXT = new Color(0x37, 0x41, 0x51);
 
     // Typography (13-14pt for optimal legibility)
+    public static final Font FONT_PAGE_TITLE = new Font("Segoe UI", Font.BOLD, 20);
+    public static final Font FONT_PAGE_SUBTITLE = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 14);
     public static final Font FONT_SUBTITLE = new Font("Segoe UI", Font.BOLD, 13);
     public static final Font FONT_REGULAR = new Font("Segoe UI", Font.PLAIN, 13);
     public static final Font FONT_BOLD = new Font("Segoe UI", Font.BOLD, 13);
     public static final Font FONT_HINT = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font FONT_BADGE = new Font("Segoe UI", Font.BOLD, 11);
+    public static final Font FONT_SIDEBAR_BRAND = new Font("Segoe UI", Font.BOLD, 15);
+    public static final Font FONT_SIDEBAR_ITEM = new Font("Segoe UI", Font.PLAIN, 13);
+    public static final Font FONT_SIDEBAR_ITEM_ACTIVE = new Font("Segoe UI", Font.BOLD, 13);
+    public static final Font FONT_SIDEBAR_CAT = new Font("Segoe UI", Font.BOLD, 10);
 
     // =========================================================================
     // RESOLUTION-INDEPENDENT VECTOR ICONS (SVG-LIKE PURE SWING)
     // =========================================================================
 
     public enum IconType {
-        PLUS, SHIP, CANCEL, SEARCH, DELETE, UNDO, WEIGHT, SPEED, BOX
+        PLUS, SHIP, CANCEL, SEARCH, DELETE, UNDO, WEIGHT, SPEED, BOX, CLOSE
     }
 
     public static class VectorIcon implements Icon {
@@ -171,6 +188,12 @@ public class UiTheme {
                     g2.drawRect(x + 2, y + 2, size - 4, size - 4);
                     g2.drawLine(x + 2, y + 6, x + size - 2, y + 6);
                     g2.drawLine(x + size / 2, y + 6, x + size / 2, y + size - 2);
+                    break;
+
+                case CLOSE: // Modal close X
+                    g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    g2.drawLine(x + 3, y + 3, x + size - 3, y + size - 3);
+                    g2.drawLine(x + size - 3, y + 3, x + 3, y + size - 3);
                     break;
             }
             g2.dispose();
@@ -470,23 +493,97 @@ public class UiTheme {
     // =========================================================================
 
     public static void configureTable(JTable table) {
-        table.setRowHeight(30);
+        table.setRowHeight(36);
         table.setFont(FONT_REGULAR);
-        table.setSelectionBackground(new Color(0xDB, 0xEA, 0xFE));
+        table.setSelectionBackground(new Color(0xEB, 0xF5, 0xFF));
         table.setSelectionForeground(TEXT_PRIMARY);
         table.setGridColor(new Color(0xF3, 0xF4, 0xF6));
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 1));
 
         // Strict Compliance Safeguard: Disable TableRowSorter (Trap 5)
         table.setAutoCreateRowSorter(false);
 
         JTableHeader header = table.getTableHeader();
-        header.setFont(FONT_BOLD);
-        header.setBackground(new Color(0xF3, 0xF4, 0xF6));
-        header.setForeground(TEXT_PRIMARY);
-        header.setPreferredSize(new Dimension(header.getWidth(), 32));
+        header.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        header.setBackground(new Color(0xF9, 0xFA, 0xFB));
+        header.setForeground(new Color(0x4B, 0x55, 0x63));
+        header.setPreferredSize(new Dimension(header.getWidth(), 36));
         header.setReorderingAllowed(false);
+        header.setBorder(new MatteBorder(0, 0, 1, 0, new Color(0xE5, 0xE7, 0xEB)));
+    }
+
+    /**
+     * Modern SaaS status pill cell renderer.
+     * Renders centered rounded badges matching ElectronDB design.
+     */
+    public static class StatusPillRenderer extends DefaultTableCellRenderer {
+        private String pillText = "";
+        private Color pillBg = new Color(0xDC, 0xFC, 0xE7);
+        private Color pillFg = new Color(0x16, 0x65, 0x34);
+        private Color pillBorder = new Color(0xBB, 0xF7, 0xD0);
+
+        public StatusPillRenderer() {
+            setOpaque(false);
+            setHorizontalAlignment(SwingConstants.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+            super.getTableCellRendererComponent(table, "", isSelected, hasFocus, row, col);
+            this.pillText = value != null ? value.toString() : "";
+
+            if (pillText.contains("Out of Stock")) {
+                pillBg = new Color(0xFE, 0xE2, 0xE2);
+                pillFg = new Color(0x99, 0x1B, 0x1B);
+                pillBorder = new Color(0xFE, 0xCA, 0xCA);
+            } else if (pillText.contains("Low Stock")) {
+                pillBg = new Color(0xFE, 0xF3, 0xC7);
+                pillFg = new Color(0xB4, 0x53, 0x09);
+                pillBorder = new Color(0xFD, 0xE6, 0x8A);
+            } else if (pillText.contains("NEXT")) {
+                pillBg = new Color(0xDB, 0xEA, 0xFE);
+                pillFg = new Color(0x1D, 0x4E, 0xD8);
+                pillBorder = new Color(0xBF, 0xDB, 0xFE);
+            } else { // "In Stock", "Active", or default
+                pillBg = new Color(0xDC, 0xFC, 0xE7);
+                pillFg = new Color(0x16, 0x65, 0x34);
+                pillBorder = new Color(0xBB, 0xF7, 0xD0);
+            }
+            return this;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            if (pillText != null && !pillText.isEmpty()) {
+                g2.setFont(FONT_BADGE);
+                FontMetrics fm = g2.getFontMetrics();
+                int textW = fm.stringWidth(pillText);
+                int pillW = textW + 18;
+                int pillH = 22;
+                int pillX = (w - pillW) / 2;
+                int pillY = (h - pillH) / 2;
+
+                g2.setColor(pillBg);
+                g2.fillRoundRect(pillX, pillY, pillW, pillH, 12, 12);
+                g2.setColor(pillBorder);
+                g2.drawRoundRect(pillX, pillY, pillW, pillH, 12, 12);
+
+                g2.setColor(pillFg);
+                int textY = pillY + (pillH + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(pillText, pillX + 9, textY);
+            }
+
+            g2.dispose();
+        }
     }
 
     public static DefaultTableCellRenderer createQueueCellRenderer() {

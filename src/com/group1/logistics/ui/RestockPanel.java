@@ -13,8 +13,10 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
 /**
- * Tab 3: Restock.
- * Dedicated inventory replenishment tab with LIFO rollback.
+ * Tab 3: Restock (Inventory Restock Audit).
+ * Modern SaaS ERP layout:
+ * Page header, top action bar with "Undo Last Restock" and "+ Add Stock" modal trigger,
+ * and clean borderless restock audit table with soft amber highlight for Row 0.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class RestockPanel extends JPanel {
@@ -22,14 +24,11 @@ public class RestockPanel extends JPanel {
     private final MainFrame mainFrame;
     private final RestockTableModel restockTableModel;
 
-    // Form inputs
-    private JComboBox<OrdersPanel.ProductComboItem> cmbRestockProduct;
-    private JTextField txtRestockQty;
-    private JButton btnAddStock;
-
     // Action button & cues
+    private JButton btnAddStock;
     private JButton btnUndo;
     private JLabel lblLastRestockSummary;
+    private JLabel lblStackCapacity;
     private JTable tblRestock;
 
     public RestockPanel(FulfillmentService service, MainFrame mainFrame) {
@@ -37,87 +36,64 @@ public class RestockPanel extends JPanel {
         this.mainFrame = mainFrame;
         this.restockTableModel = new RestockTableModel(service.getRestockStack(), service);
 
-        setLayout(new BorderLayout(0, 10));
+        setLayout(new BorderLayout(0, 14));
         setBackground(UiTheme.BG_WINDOW);
-        setBorder(new EmptyBorder(12, 14, 12, 14));
+        setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // 1. Top Form: "Add Stock to a Product"
-        add(createRestockFormCard(), BorderLayout.NORTH);
+        // 1. Page Header (Title + Subtitle)
+        add(createPageHeader(), BorderLayout.NORTH);
 
-        // 2. Center Panel: "Restock History"
-        add(createRestockHistoryCard(), BorderLayout.CENTER);
+        // 2. Center Card (Toolbar + Table)
+        JPanel centerCard = new JPanel(new BorderLayout(0, 10));
+        centerCard.setBackground(UiTheme.SURFACE);
+        centerCard.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
 
-        refreshProductDropdown();
+        centerCard.add(createToolbar(), BorderLayout.NORTH);
+        centerCard.add(createTable(), BorderLayout.CENTER);
+        centerCard.add(createTableFooter(), BorderLayout.SOUTH);
+
+        add(centerCard, BorderLayout.CENTER);
+
         updateButtonStatesAndSummary();
-        SwingUtilities.invokeLater(() -> txtRestockQty.requestFocusInWindow());
     }
 
     public void setTechnicalDetails(boolean enabled) {
         restockTableModel.setTechnicalDetails(enabled);
     }
 
-    private JPanel createRestockFormCard() {
-        JPanel card = UiTheme.createCardPanel("Add Stock to a Product");
-        card.setLayout(new GridBagLayout());
+    private JPanel createPageHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
 
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(5, 6, 5, 6);
-        g.fill = GridBagConstraints.HORIZONTAL;
+        JPanel leftBox = new JPanel();
+        leftBox.setOpaque(false);
+        leftBox.setLayout(new BoxLayout(leftBox, BoxLayout.Y_AXIS));
 
-        cmbRestockProduct = new JComboBox<>();
-        cmbRestockProduct.setFont(UiTheme.FONT_REGULAR);
-        cmbRestockProduct.setToolTipText("Select the product to add stock to");
+        JLabel lblTitle = new JLabel("Inventory Restock Audit");
+        lblTitle.setFont(UiTheme.FONT_PAGE_TITLE);
+        lblTitle.setForeground(UiTheme.TEXT_PRIMARY);
 
-        txtRestockQty = new JTextField("10", 6);
-        txtRestockQty.setFont(UiTheme.FONT_REGULAR);
-        txtRestockQty.setToolTipText("Number of units added to inventory");
-        txtRestockQty.addActionListener(e -> handleAddStock());
-        UiTheme.installFocusRing(txtRestockQty);
+        JLabel lblSubtitle = new JLabel("LIFO replenishment stack with atomic rollback protection and safe stock deduction.");
+        lblSubtitle.setFont(UiTheme.FONT_PAGE_SUBTITLE);
+        lblSubtitle.setForeground(UiTheme.TEXT_MUTED);
 
-        btnAddStock = UiTheme.createSuccessButton("Add Stock",
-                new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
-                "Increase stock for this product and log entry");
-        btnAddStock.addActionListener(e -> handleAddStock());
+        leftBox.add(lblTitle);
+        leftBox.add(Box.createVerticalStrut(2));
+        leftBox.add(lblSubtitle);
+        header.add(leftBox, BorderLayout.WEST);
 
-        // Row 0: Select Product & Quantity
-        g.gridy = 0;
-        g.gridx = 0; g.weightx = 0.0; card.add(new JLabel("Product:"), g);
-        g.gridx = 1; g.weightx = 1.0; card.add(cmbRestockProduct, g);
-        g.gridx = 2; g.weightx = 0.0; card.add(new JLabel("Quantity to Add:"), g);
-        g.gridx = 3; g.weightx = 0.25; card.add(txtRestockQty, g);
-
-        // Row 1: Add Stock Button
-        g.gridy = 1;
-        g.gridx = 0; g.gridwidth = 4; g.weightx = 1.0;
-        g.insets = new Insets(8, 6, 4, 6);
-        card.add(btnAddStock, g);
-
-        return card;
+        return header;
     }
 
-    private JPanel createRestockHistoryCard() {
-        JPanel card = UiTheme.createCardPanel("Restock History");
-        card.setLayout(new BorderLayout(0, 8));
+    private JPanel createToolbar() {
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
 
-        // Table
-        tblRestock = new JTable(restockTableModel);
-        UiTheme.configureTable(tblRestock);
-        tblRestock.setDefaultRenderer(Object.class, UiTheme.createStackCellRenderer());
-        tblRestock.setFillsViewportHeight(true);
-
-        TableColumnModel colModel = tblRestock.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(100); // Restock #
-        colModel.getColumn(1).setPreferredWidth(260); // Product
-        colModel.getColumn(2).setPreferredWidth(120); // Quantity Added
-        colModel.getColumn(3).setPreferredWidth(110); // Order of Entry
-
-        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblRestock);
-        card.add(scrollPane, BorderLayout.CENTER);
-
-        // Bottom Controls: Summary + Undo button
-        JPanel bottomArea = new JPanel(new BorderLayout(0, 8));
-        bottomArea.setBackground(UiTheme.SURFACE);
-
+        // Left: Last restock summary pill
         lblLastRestockSummary = new JLabel(" Last Restock: Loading...");
         lblLastRestockSummary.setFont(UiTheme.FONT_SUBTITLE);
         lblLastRestockSummary.setOpaque(true);
@@ -125,40 +101,68 @@ public class RestockPanel extends JPanel {
         lblLastRestockSummary.setForeground(UiTheme.TEXT_PRIMARY);
         lblLastRestockSummary.setBorder(new CompoundBorder(
                 new LineBorder(UiTheme.HIGHLIGHT_STACK_ROW0_BORDER, 1, true),
-                new EmptyBorder(7, 10, 7, 10)
+                new EmptyBorder(6, 12, 6, 12)
         ));
-        bottomArea.add(lblLastRestockSummary, BorderLayout.NORTH);
+        toolbar.add(lblLastRestockSummary, BorderLayout.CENTER);
 
-        JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        btnBar.setBackground(UiTheme.SURFACE);
+        // Right: Undo button + "+ Add Stock" button
+        JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnBar.setOpaque(false);
 
         btnUndo = UiTheme.createWarningButton("Undo Last Restock",
                 new UiTheme.VectorIcon(UiTheme.IconType.UNDO, 14),
                 "Roll back the most recent restock and subtract stock");
         btnUndo.addActionListener(e -> handleUndo());
+
+        btnAddStock = UiTheme.createSuccessButton("+ Add Stock",
+                new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
+                "Open modal to replenish stock for a product");
+        btnAddStock.addActionListener(e -> handleOpenAddStockDialog());
+
         btnBar.add(btnUndo);
+        btnBar.add(btnAddStock);
 
-        bottomArea.add(btnBar, BorderLayout.SOUTH);
-        card.add(bottomArea, BorderLayout.SOUTH);
-
-        return card;
+        toolbar.add(btnBar, BorderLayout.EAST);
+        return toolbar;
     }
 
-    public void refreshProductDropdown() {
-        OrdersPanel.ProductComboItem prevSelected = (OrdersPanel.ProductComboItem) cmbRestockProduct.getSelectedItem();
-        cmbRestockProduct.removeAllItems();
+    private JScrollPane createTable() {
+        tblRestock = new JTable(restockTableModel);
+        UiTheme.configureTable(tblRestock);
+        tblRestock.setDefaultRenderer(Object.class, UiTheme.createStackCellRenderer());
+        tblRestock.setFillsViewportHeight(true);
 
-        Product[] products = service.getInventoryBst().inOrder();
-        if (products != null) {
-            for (int i = 0; i < products.length; i++) {
-                Product p = products[i];
-                OrdersPanel.ProductComboItem item = new OrdersPanel.ProductComboItem(p.getSkuId(), p.getName(), p.getStockQty());
-                cmbRestockProduct.addItem(item);
+        TableColumnModel colModel = tblRestock.getColumnModel();
+        colModel.getColumn(0).setPreferredWidth(100); // Restock #
+        colModel.getColumn(1).setPreferredWidth(280); // Product
+        colModel.getColumn(2).setPreferredWidth(130); // Quantity Added
+        colModel.getColumn(3).setPreferredWidth(120); // Order of Entry
 
-                if (prevSelected != null && prevSelected.getSkuId() == p.getSkuId()) {
-                    cmbRestockProduct.setSelectedItem(item);
-                }
-            }
+        JScrollPane sp = UiTheme.createModernScrollPane(tblRestock);
+        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        return sp;
+    }
+
+    private JPanel createTableFooter() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(6, 4, 2, 4));
+
+        lblStackCapacity = new JLabel("Audit Log in Stack");
+        lblStackCapacity.setFont(UiTheme.FONT_HINT);
+        lblStackCapacity.setForeground(UiTheme.TEXT_MUTED);
+
+        footer.add(lblStackCapacity, BorderLayout.WEST);
+        return footer;
+    }
+
+    private void handleOpenAddStockDialog() {
+        Frame topFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        AddStockDialog dialog = new AddStockDialog(topFrame, service, mainFrame);
+        dialog.setVisible(true);
+
+        if (dialog.isStockAdded()) {
+            refreshTables();
         }
     }
 
@@ -168,7 +172,13 @@ public class RestockPanel extends JPanel {
 
         if (stackEmpty) {
             lblLastRestockSummary.setText(" No restock actions to undo.");
+            lblLastRestockSummary.setBackground(UiTheme.SURFACE_ALT);
             lblLastRestockSummary.setForeground(UiTheme.TEXT_MUTED);
+            lblLastRestockSummary.setBorder(new CompoundBorder(
+                    new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                    new EmptyBorder(6, 12, 6, 12)
+            ));
+            lblStackCapacity.setText("Restock Stack: 0/20 actions");
         } else {
             RestockAction top = service.getRestockStack().peek();
             Product p = service.findProduct(top.getSkuId());
@@ -176,39 +186,13 @@ public class RestockPanel extends JPanel {
 
             lblLastRestockSummary.setText(" Last Restock: Restock #" + top.getActionId()
                     + " · Added +" + top.getQuantityAdded() + " units to " + productName);
+            lblLastRestockSummary.setBackground(UiTheme.HIGHLIGHT_STACK_ROW0);
             lblLastRestockSummary.setForeground(UiTheme.TEXT_PRIMARY);
-        }
-    }
-
-    private void handleAddStock() {
-        OrdersPanel.ProductComboItem selectedProduct = (OrdersPanel.ProductComboItem) cmbRestockProduct.getSelectedItem();
-        String qtyStr = txtRestockQty.getText().trim();
-
-        if (selectedProduct == null) {
-            mainFrame.setFeedback(false, "Please select a product to restock.");
-            return;
-        }
-
-        int qty;
-        try {
-            qty = Integer.parseInt(qtyStr);
-            if (qty <= 0) {
-                mainFrame.setFeedback(false, "Quantity to add must be greater than 0.");
-                return;
-            }
-        } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Quantity must be a valid whole number.");
-            return;
-        }
-
-        OpResult result = service.restock(selectedProduct.getSkuId(), qty);
-        if (result.isSuccess()) {
-            txtRestockQty.setText("10");
-            mainFrame.setFeedback(true, "Added +" + qty + " units to " + selectedProduct.getName() + ".");
-            mainFrame.refreshAll();
-        } else {
-            mainFrame.setFeedback(false, result.getMessage());
-            JOptionPane.showMessageDialog(this, result.getMessage(), "Restock Blocked", JOptionPane.ERROR_MESSAGE);
+            lblLastRestockSummary.setBorder(new CompoundBorder(
+                    new LineBorder(UiTheme.HIGHLIGHT_STACK_ROW0_BORDER, 1, true),
+                    new EmptyBorder(6, 12, 6, 12)
+            ));
+            lblStackCapacity.setText("Restock Stack: " + service.getRestockStack().size() + "/20 actions (LIFO array)");
         }
     }
 
@@ -240,8 +224,6 @@ public class RestockPanel extends JPanel {
 
     public void refreshTables() {
         restockTableModel.fireTableDataChanged();
-        refreshProductDropdown();
         updateButtonStatesAndSummary();
-        SwingUtilities.invokeLater(() -> txtRestockQty.requestFocusInWindow());
     }
 }

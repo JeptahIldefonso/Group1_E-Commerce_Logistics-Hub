@@ -8,89 +8,75 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 
 /**
  * Main application frame: Order & Shipping Manager.
- * 4 Dedicated Tabs: Orders, Products, Restock, Shipments.
- * Includes "Show technical details" toggle and clean "Ready." message bar.
+ * Modern SaaS ERP layout (ElectronDB style):
+ * Left side navigation bar (SidebarPanel), CardLayout central workspace,
+ * and bottom subtle notification toast strip.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class MainFrame extends JFrame {
     private final FulfillmentService service;
 
+    private final SidebarPanel sidebarPanel;
+    private final CardLayout cardLayout;
+    private final JPanel pnlContent;
+
     private final OrdersPanel ordersPanel;
     private final CatalogPanel catalogPanel;
     private final RestockPanel restockPanel;
     private final FreightPanel freightPanel;
-    private final JTabbedPane tabbedPane;
 
     private final JPanel pnlFeedback;
     private final JLabel lblFeedback;
-    private final JLabel lblStatusBar;
-    private final JCheckBox chkTechnicalDetails;
+
+    private static final String CARD_ORDERS = "ORDERS";
+    private static final String CARD_PRODUCTS = "PRODUCTS";
+    private static final String CARD_RESTOCK = "RESTOCK";
+    private static final String CARD_SHIPMENTS = "SHIPMENTS";
 
     public MainFrame(FulfillmentService service) {
-        super("Order & Shipping Manager");
+        super("Order & Shipping Manager — Logistics Hub");
         this.service = service;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1220, 740);
-        setMinimumSize(new Dimension(1024, 650));
+        setSize(1260, 780);
+        setMinimumSize(new Dimension(1080, 680));
         setLocationRelativeTo(null); // Center on screen
 
         getContentPane().setBackground(UiTheme.BG_WINDOW);
         setLayout(new BorderLayout(0, 0));
 
-        // Initialize 4 Tab Panels (One job per tab)
+        // 1. Left Sidebar Navigation
+        this.sidebarPanel = new SidebarPanel(this);
+        add(sidebarPanel, BorderLayout.WEST);
+
+        // 2. Center Content Area (CardLayout)
+        this.cardLayout = new CardLayout();
+        this.pnlContent = new JPanel(cardLayout);
+        pnlContent.setBackground(UiTheme.BG_WINDOW);
+
         this.ordersPanel = new OrdersPanel(service, this);
         this.catalogPanel = new CatalogPanel(service, this);
         this.restockPanel = new RestockPanel(service, this);
         this.freightPanel = new FreightPanel(service, this);
 
-        // Tabbed Pane with concise 4 tabs
-        this.tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        tabbedPane.setBackground(UiTheme.BG_WINDOW);
+        pnlContent.add(ordersPanel, CARD_ORDERS);
+        pnlContent.add(catalogPanel, CARD_PRODUCTS);
+        pnlContent.add(restockPanel, CARD_RESTOCK);
+        pnlContent.add(freightPanel, CARD_SHIPMENTS);
 
-        tabbedPane.addTab("Orders", ordersPanel);
-        tabbedPane.addTab("Products", catalogPanel);
-        tabbedPane.addTab("Restock", restockPanel);
-        tabbedPane.addTab("Shipments", freightPanel);
+        add(pnlContent, BorderLayout.CENTER);
 
-        // Keyboard navigation hotkeys (Ctrl + 1..4)
-        getRootPane().registerKeyboardAction(
-                e -> tabbedPane.setSelectedIndex(0),
-                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.CTRL_DOWN_MASK),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-        getRootPane().registerKeyboardAction(
-                e -> tabbedPane.setSelectedIndex(1),
-                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.CTRL_DOWN_MASK),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-        getRootPane().registerKeyboardAction(
-                e -> tabbedPane.setSelectedIndex(2),
-                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_3, java.awt.event.InputEvent.CTRL_DOWN_MASK),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-        getRootPane().registerKeyboardAction(
-                e -> tabbedPane.setSelectedIndex(3),
-                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_4, java.awt.event.InputEvent.CTRL_DOWN_MASK),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-
-        add(tabbedPane, BorderLayout.CENTER);
-
-        // Bottom Container: Message Bar + Status Bar with Technical Details toggle
-        JPanel bottomContainer = new JPanel(new BorderLayout(0, 0));
-        bottomContainer.setBackground(UiTheme.SURFACE);
-
-        // 1. Message Bar (Default: "Ready.", Green for Success, Red for Errors)
+        // 3. Bottom Feedback Notification Strip
         pnlFeedback = new JPanel(new BorderLayout(8, 0));
         pnlFeedback.setBackground(UiTheme.FEEDBACK_READY_BG);
         pnlFeedback.setBorder(new CompoundBorder(
                 new MatteBorder(1, 0, 0, 0, UiTheme.BORDER),
-                new EmptyBorder(6, 14, 6, 14)
+                new EmptyBorder(6, 16, 6, 16)
         ));
 
         lblFeedback = new JLabel("Ready.");
@@ -98,44 +84,58 @@ public class MainFrame extends JFrame {
         lblFeedback.setForeground(UiTheme.FEEDBACK_READY_TEXT);
         pnlFeedback.add(lblFeedback, BorderLayout.CENTER);
 
-        bottomContainer.add(pnlFeedback, BorderLayout.NORTH);
+        add(pnlFeedback, BorderLayout.SOUTH);
 
-        // 2. System Status Bar + Technical Details Checkbox
-        JPanel pnlStatus = new JPanel(new BorderLayout(10, 0));
-        pnlStatus.setBackground(UiTheme.SURFACE_ALT);
-        pnlStatus.setBorder(new CompoundBorder(
-                new MatteBorder(1, 0, 0, 0, UiTheme.BORDER_CARD),
-                new EmptyBorder(5, 14, 5, 14)
-        ));
-
-        lblStatusBar = new JLabel();
-        lblStatusBar.setFont(UiTheme.FONT_REGULAR);
-        lblStatusBar.setForeground(UiTheme.TEXT_PRIMARY);
-        pnlStatus.add(lblStatusBar, BorderLayout.CENTER);
-
-        // Technical details toggle (OFF by default for normal users)
-        chkTechnicalDetails = new JCheckBox("Show technical details");
-        chkTechnicalDetails.setFont(UiTheme.FONT_HINT);
-        chkTechnicalDetails.setForeground(UiTheme.TEXT_MUTED);
-        chkTechnicalDetails.setBackground(UiTheme.SURFACE_ALT);
-        chkTechnicalDetails.setFocusPainted(false);
-        chkTechnicalDetails.setToolTipText("Toggle visibility of algorithm names, tree height, and sequence numbers");
-        chkTechnicalDetails.addActionListener(e -> handleToggleTechnicalDetails());
-
-        pnlStatus.add(chkTechnicalDetails, BorderLayout.EAST);
-        bottomContainer.add(pnlStatus, BorderLayout.SOUTH);
-
-        add(bottomContainer, BorderLayout.SOUTH);
+        // 4. Keyboard Shortcuts (Ctrl + 1..4)
+        getRootPane().registerKeyboardAction(
+                e -> sidebarPanel.selectTab(0),
+                KeyStroke.getKeyStroke(KeyEvent.VK_1, InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+                e -> sidebarPanel.selectTab(1),
+                KeyStroke.getKeyStroke(KeyEvent.VK_2, InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+                e -> sidebarPanel.selectTab(2),
+                KeyStroke.getKeyStroke(KeyEvent.VK_3, InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+                e -> sidebarPanel.selectTab(3),
+                KeyStroke.getKeyStroke(KeyEvent.VK_4, InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
 
         refreshAll();
+        sidebarPanel.selectTab(1); // Default to Products tab
     }
 
-    private void handleToggleTechnicalDetails() {
-        boolean enabled = chkTechnicalDetails.isSelected();
+    /**
+     * Switches the active module view in the center CardLayout.
+     */
+    public void showTab(int index) {
+        switch (index) {
+            case 0:
+                cardLayout.show(pnlContent, CARD_ORDERS);
+                break;
+            case 1:
+                cardLayout.show(pnlContent, CARD_PRODUCTS);
+                break;
+            case 2:
+                cardLayout.show(pnlContent, CARD_RESTOCK);
+                break;
+            case 3:
+                cardLayout.show(pnlContent, CARD_SHIPMENTS);
+                break;
+        }
+    }
+
+    public void handleToggleTechnicalDetails(boolean enabled) {
         catalogPanel.setTechnicalDetails(enabled);
         restockPanel.setTechnicalDetails(enabled);
         freightPanel.setTechnicalDetails(enabled);
-        updateStatusBarText();
     }
 
     /**
@@ -167,30 +167,8 @@ public class MainFrame extends JFrame {
         pnlFeedback.repaint();
     }
 
-    private void updateStatusBarText() {
-        boolean tech = chkTechnicalDetails != null && chkTechnicalDetails.isSelected();
-        if (tech) {
-            lblStatusBar.setText(String.format(
-                    "Waiting Orders: %d/20 (Circular Queue)  |  Restocks: %d/20 (Stack)  |  Catalog: %d SKUs (Tree Height: %d)  |  Shipped Packages: %d",
-                    service.getOrderQueue().size(),
-                    service.getRestockStack().size(),
-                    service.getInventoryBst().size(),
-                    service.getInventoryBst().height(),
-                    service.getPackageArray().size()
-            ));
-        } else {
-            lblStatusBar.setText(String.format(
-                    "Waiting Orders: %d  |  Restocks You Can Undo: %d  |  Products: %d  |  Shipped Packages: %d",
-                    service.getOrderQueue().size(),
-                    service.getRestockStack().size(),
-                    service.getInventoryBst().size(),
-                    service.getPackageArray().size()
-            ));
-        }
-    }
-
     /**
-     * Refreshes all 4 table models, dynamic dropdowns, button states, and status counts.
+     * Refreshes all table models, dynamic dropdowns, button states, and sidebar live count badges.
      */
     public void refreshAll() {
         ordersPanel.refreshTables();
@@ -198,13 +176,13 @@ public class MainFrame extends JFrame {
         restockPanel.refreshTables();
         freightPanel.refreshTables();
 
-        if (tabbedPane != null) {
-            tabbedPane.setTitleAt(0, "Orders (" + service.getOrderQueue().size() + ")");
-            tabbedPane.setTitleAt(1, "Products (" + service.getInventoryBst().size() + ")");
-            tabbedPane.setTitleAt(2, "Restock (" + service.getRestockStack().size() + ")");
-            tabbedPane.setTitleAt(3, "Shipments (" + service.getPackageArray().size() + ")");
+        if (sidebarPanel != null) {
+            sidebarPanel.updateBadges(
+                    service.getOrderQueue().size(),
+                    service.getInventoryBst().size(),
+                    service.getRestockStack().size(),
+                    service.getPackageArray().size()
+            );
         }
-
-        updateStatusBarText();
     }
 }

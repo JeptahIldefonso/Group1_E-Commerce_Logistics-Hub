@@ -13,8 +13,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * Tab 4: Shipments.
- * Sort shipments by weight or speed with plain-English direction toggles.
+ * Tab 4: Shipments (Shipment Dispatch & Logistics).
+ * Modern SaaS ERP layout:
+ * Page header, action toolbar with quick sort buttons and direction toggle,
+ * and clean borderless shipped packages table with column header click-to-sort.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class FreightPanel extends JPanel {
@@ -29,21 +31,35 @@ public class FreightPanel extends JPanel {
     private JLabel lblActiveSort;
     private JButton btnToggleOrder;
     private JTable tblFreight;
+    private JLabel lblShipmentCount;
 
     public FreightPanel(FulfillmentService service, MainFrame mainFrame) {
         this.service = service;
         this.mainFrame = mainFrame;
         this.freightTableModel = new FreightTableModel(service.getPackageArray());
 
-        setLayout(new BorderLayout(0, 10));
+        setLayout(new BorderLayout(0, 14));
         setBackground(UiTheme.BG_WINDOW);
-        setBorder(new EmptyBorder(12, 14, 12, 14));
+        setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // Sorting Controls Panel
-        add(createSortingControlsCard(), BorderLayout.NORTH);
+        // 1. Page Header (Title + Subtitle)
+        add(createPageHeader(), BorderLayout.NORTH);
 
-        // Shipped Packages Table Panel
-        add(createTableCard(), BorderLayout.CENTER);
+        // 2. Center Card (Toolbar + Table)
+        JPanel centerCard = new JPanel(new BorderLayout(0, 10));
+        centerCard.setBackground(UiTheme.SURFACE);
+        centerCard.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+
+        centerCard.add(createToolbar(), BorderLayout.NORTH);
+        centerCard.add(createTable(), BorderLayout.CENTER);
+        centerCard.add(createTableFooter(), BorderLayout.SOUTH);
+
+        add(centerCard, BorderLayout.CENTER);
+
+        updateActiveSortLabel();
     }
 
     public void setTechnicalDetails(boolean enabled) {
@@ -52,45 +68,65 @@ public class FreightPanel extends JPanel {
         updateActiveSortLabel();
     }
 
-    private JPanel createSortingControlsCard() {
-        JPanel card = UiTheme.createCardPanel("Sort Shipments");
-        card.setLayout(new BorderLayout(0, 8));
+    private JPanel createPageHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
 
-        // Button Toolbar
-        JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
-        btnBar.setBackground(UiTheme.SURFACE);
+        JPanel leftBox = new JPanel();
+        leftBox.setOpaque(false);
+        leftBox.setLayout(new BoxLayout(leftBox, BoxLayout.Y_AXIS));
+
+        JLabel lblTitle = new JLabel("Shipment Dispatch & Logistics");
+        lblTitle.setFont(UiTheme.FONT_PAGE_TITLE);
+        lblTitle.setForeground(UiTheme.TEXT_PRIMARY);
+
+        JLabel lblSubtitle = new JLabel("Custom QuickSort (by weight) and InsertionSort (by delivery speed) ranking engine.");
+        lblSubtitle.setFont(UiTheme.FONT_PAGE_SUBTITLE);
+        lblSubtitle.setForeground(UiTheme.TEXT_MUTED);
+
+        leftBox.add(lblTitle);
+        leftBox.add(Box.createVerticalStrut(2));
+        leftBox.add(lblSubtitle);
+        header.add(leftBox, BorderLayout.WEST);
+
+        return header;
+    }
+
+    private JPanel createToolbar() {
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
+
+        // Left: Active sort banner pill
+        lblActiveSort = new JLabel();
+        lblActiveSort.setFont(UiTheme.FONT_SUBTITLE);
+        lblActiveSort.setOpaque(true);
+        lblActiveSort.setBackground(UiTheme.SURFACE_ALT);
+        lblActiveSort.setForeground(UiTheme.TEXT_PRIMARY);
+        lblActiveSort.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(6, 12, 6, 12)
+        ));
+        toolbar.add(lblActiveSort, BorderLayout.CENTER);
+
+        // Right: Sort buttons toolbar
+        JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnBar.setOpaque(false);
 
         JButton btnSortWeight = UiTheme.createPrimaryButton("Sort by Weight",
                 new UiTheme.VectorIcon(UiTheme.IconType.WEIGHT, 14),
-                "Order packages by parcel weight");
+                "Order packages by parcel weight using QuickSort");
         JButton btnSortSpeed = UiTheme.createPrimaryButton("Sort by Delivery Speed",
                 new UiTheme.VectorIcon(UiTheme.IconType.SPEED, 14),
-                "Order packages by delivery urgency");
-        btnToggleOrder = UiTheme.createSecondaryButton("Lightest First", "Toggle between lightest first and heaviest first");
+                "Order packages by delivery urgency using InsertionSort");
+        btnToggleOrder = UiTheme.createSecondaryButton("Lightest First", "Toggle sort direction");
 
         btnBar.add(btnSortWeight);
         btnBar.add(btnSortSpeed);
         btnBar.add(btnToggleOrder);
 
-        card.add(btnBar, BorderLayout.NORTH);
+        toolbar.add(btnBar, BorderLayout.EAST);
 
-        // Active Sort Status Strip
-        JPanel statusStrip = new JPanel(new BorderLayout(8, 0));
-        statusStrip.setBackground(UiTheme.SURFACE_ALT);
-        statusStrip.setBorder(new CompoundBorder(
-                new LineBorder(UiTheme.BORDER, 1, true),
-                new EmptyBorder(7, 12, 7, 12)
-        ));
-
-        lblActiveSort = new JLabel();
-        lblActiveSort.setFont(UiTheme.FONT_SUBTITLE);
-        lblActiveSort.setForeground(UiTheme.TEXT_PRIMARY);
-        updateActiveSortLabel();
-
-        statusStrip.add(lblActiveSort, BorderLayout.CENTER);
-        card.add(statusStrip, BorderLayout.SOUTH);
-
-        // Listeners
         btnSortWeight.addActionListener(e -> {
             currentMode = 1;
             OpResult result = service.sortPackages(1, 1, ascending);
@@ -126,7 +162,7 @@ public class FreightPanel extends JPanel {
             mainFrame.setFeedback(true, "Sort order updated.");
         });
 
-        return card;
+        return toolbar;
     }
 
     private void updateToggleText() {
@@ -141,17 +177,11 @@ public class FreightPanel extends JPanel {
         }
     }
 
-    private JPanel createTableCard() {
-        JPanel card = UiTheme.createCardPanel("Shipped Packages");
-        card.setLayout(new BorderLayout(0, 6));
-
+    private JScrollPane createTable() {
         tblFreight = new JTable(freightTableModel);
         UiTheme.configureTable(tblFreight);
         tblFreight.setDefaultRenderer(Object.class, UiTheme.createFreightCellRenderer());
         tblFreight.setFillsViewportHeight(true);
-
-        tblFreight.setAutoCreateRowSorter(false);
-        tblFreight.getTableHeader().setReorderingAllowed(false);
 
         TableColumnModel colModel = tblFreight.getColumnModel();
         colModel.getColumn(0).setPreferredWidth(100); // Package No.
@@ -161,7 +191,6 @@ public class FreightPanel extends JPanel {
         colModel.getColumn(4).setPreferredWidth(140); // Delivery Speed
         colModel.getColumn(5).setPreferredWidth(95);  // Shipped #
 
-        // Header click listener
         tblFreight.getTableHeader().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -170,10 +199,22 @@ public class FreightPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblFreight);
-        card.add(scrollPane, BorderLayout.CENTER);
+        JScrollPane sp = UiTheme.createModernScrollPane(tblFreight);
+        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        return sp;
+    }
 
-        return card;
+    private JPanel createTableFooter() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(6, 4, 2, 4));
+
+        lblShipmentCount = new JLabel("Click column headers to sort dynamically");
+        lblShipmentCount.setFont(UiTheme.FONT_HINT);
+        lblShipmentCount.setForeground(UiTheme.TEXT_MUTED);
+
+        footer.add(lblShipmentCount, BorderLayout.WEST);
+        return footer;
     }
 
     private void handleHeaderClick(int col) {
@@ -222,10 +263,16 @@ public class FreightPanel extends JPanel {
             }
         }
 
-        lblActiveSort.setText("Showing: " + description + algorithmDetails);
+        if (lblActiveSort != null) {
+            lblActiveSort.setText(" Showing: " + description + algorithmDetails);
+        }
+        if (lblShipmentCount != null) {
+            lblShipmentCount.setText("Total Dispatched: " + service.getPackageArray().size() + " packages | Click column headers to sort");
+        }
     }
 
     public void refreshTables() {
         freightTableModel.fireTableDataChanged();
+        updateActiveSortLabel();
     }
 }

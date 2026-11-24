@@ -8,12 +8,15 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
 /**
- * Tab 2: Products.
- * Product lookup, single-column product creation, and safe deletion.
+ * Tab 2: Product Management.
+ * SaaS ERP layout matching Image 1:
+ * Page header, filter pills, search input, "+ Add Product" modal trigger,
+ * and borderless modern table with rounded status pills.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class CatalogPanel extends JPanel {
@@ -22,55 +25,50 @@ public class CatalogPanel extends JPanel {
     private final CatalogTableModel catalogTableModel;
     private boolean technicalDetails = false;
 
-    // Register product form
-    private JTextField txtNewSku;
-    private JTextField txtNewName;
-    private JTextField txtNewPrice;
-    private JTextField txtNewStock;
-    private JButton btnAdd;
-
-    // Search and Delete controls
-    private JTextField txtSearchSku;
-    private JButton btnSearch;
-    private JButton btnDelete;
-    private JLabel lblSearchResult;
-    private JTable tblCatalog;
-
-    private Product selectedProduct = null;
+    // Search and Action controls
+    private JTextField txtSearch;
+    private JButton btnAddProduct;
+    private JButton btnDeleteProduct;
     private JLabel lblTreeHeightBadge;
-    private JLabel lblKpiTotal;
-    private JLabel lblKpiHealthy;
-    private JLabel lblKpiAttention;
+
+    // Filter pills
+    private JLabel lblPillAll;
+    private JLabel lblPillHealthy;
+    private JLabel lblPillAttention;
+    private JLabel lblTableSummary;
+
+    private JTable tblCatalog;
+    private Product selectedProduct = null;
 
     public CatalogPanel(FulfillmentService service, MainFrame mainFrame) {
         this.service = service;
         this.mainFrame = mainFrame;
         this.catalogTableModel = new CatalogTableModel(service.getInventoryBst());
 
-        setLayout(new BorderLayout(0, 10));
+        setLayout(new BorderLayout(0, 14));
         setBackground(UiTheme.BG_WINDOW);
-        setBorder(new EmptyBorder(12, 14, 12, 14));
+        setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // 1. Top Panel: Find Product Row & Forms
-        JPanel topContainer = new JPanel(new BorderLayout(0, 8));
-        topContainer.setBackground(UiTheme.BG_WINDOW);
+        // 1. Page Header (Title, Subtitle & Tech Badge)
+        add(createPageHeader(), BorderLayout.NORTH);
 
-        topContainer.add(createFindProductBar(), BorderLayout.NORTH);
+        // 2. Center Content (Toolbar + Table Card)
+        JPanel centerCard = new JPanel(new BorderLayout(0, 10));
+        centerCard.setBackground(UiTheme.SURFACE);
+        centerCard.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
 
-        JPanel formsContainer = new JPanel(new GridLayout(1, 2, 12, 0));
-        formsContainer.setBackground(UiTheme.BG_WINDOW);
-        formsContainer.add(createAddProductCard());
-        formsContainer.add(createProductDetailsCard());
+        centerCard.add(createToolbar(), BorderLayout.NORTH);
+        centerCard.add(createTable(), BorderLayout.CENTER);
+        centerCard.add(createTableFooter(), BorderLayout.SOUTH);
 
-        topContainer.add(formsContainer, BorderLayout.CENTER);
-        add(topContainer, BorderLayout.NORTH);
+        add(centerCard, BorderLayout.CENTER);
 
-        // 2. Center: Product List Table
-        add(createProductTableCard(), BorderLayout.CENTER);
-
-        updateKpiCards();
+        updateFilterPills();
         updateDeleteButtonState();
-        SwingUtilities.invokeLater(() -> txtSearchSku.requestFocusInWindow());
+        SwingUtilities.invokeLater(() -> txtSearch.requestFocusInWindow());
     }
 
     public void setTechnicalDetails(boolean enabled) {
@@ -78,140 +76,101 @@ public class CatalogPanel extends JPanel {
         if (lblTreeHeightBadge != null) {
             lblTreeHeightBadge.setVisible(enabled);
             if (enabled) {
-                lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " ");
+                lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " | Size: " + service.getInventoryBst().size() + " ");
             }
         }
     }
 
-    private JPanel createFindProductBar() {
-        JPanel bar = new JPanel(new BorderLayout(10, 0));
-        bar.setBackground(UiTheme.SURFACE);
-        bar.setBorder(new CompoundBorder(
-                new LineBorder(UiTheme.BORDER, 1, true),
-                new EmptyBorder(8, 12, 8, 12)
+    private JPanel createPageHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JPanel leftBox = new JPanel();
+        leftBox.setOpaque(false);
+        leftBox.setLayout(new BoxLayout(leftBox, BoxLayout.Y_AXIS));
+
+        JLabel lblTitle = new JLabel("Product Management");
+        lblTitle.setFont(UiTheme.FONT_PAGE_TITLE);
+        lblTitle.setForeground(UiTheme.TEXT_PRIMARY);
+
+        JLabel lblSubtitle = new JLabel("Canonical inventory catalog entities, unit prices, and BST hierarchical indexing.");
+        lblSubtitle.setFont(UiTheme.FONT_PAGE_SUBTITLE);
+        lblSubtitle.setForeground(UiTheme.TEXT_MUTED);
+
+        leftBox.add(lblTitle);
+        leftBox.add(Box.createVerticalStrut(2));
+        leftBox.add(lblSubtitle);
+        header.add(leftBox, BorderLayout.WEST);
+
+        // Technical details badge (Right)
+        lblTreeHeightBadge = new JLabel();
+        lblTreeHeightBadge.setFont(UiTheme.FONT_BADGE);
+        lblTreeHeightBadge.setOpaque(true);
+        lblTreeHeightBadge.setBackground(new Color(0xEB, 0xF5, 0xFF));
+        lblTreeHeightBadge.setForeground(new Color(0x1D, 0x4E, 0xD8));
+        lblTreeHeightBadge.setBorder(new CompoundBorder(
+                new LineBorder(new Color(0xBF, 0xDB, 0xFE), 1, true),
+                new EmptyBorder(4, 10, 4, 10)
         ));
+        lblTreeHeightBadge.setVisible(false);
+        header.add(lblTreeHeightBadge, BorderLayout.EAST);
 
-        JLabel lblPrompt = new JLabel("Find Product:");
-        lblPrompt.setFont(UiTheme.FONT_BOLD);
-        bar.add(lblPrompt, BorderLayout.WEST);
+        return header;
+    }
 
-        txtSearchSku = new JTextField();
-        txtSearchSku.setFont(UiTheme.FONT_REGULAR);
-        txtSearchSku.setToolTipText("Type a product code or product name");
-        txtSearchSku.addActionListener(e -> handleSearchProduct());
-        txtSearchSku.registerKeyboardAction(
-                e -> {
-                    txtSearchSku.setText("");
-                    selectedProduct = null;
-                    updateDeleteButtonState();
-                    lblSearchResult.setText("Click a product in the list, or type its code or name above.");
-                    tblCatalog.clearSelection();
-                    mainFrame.setFeedback(true, "Search cleared.");
-                },
+    private JPanel createToolbar() {
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
+
+        // Left: Filter Pills
+        JPanel pnlPills = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        pnlPills.setOpaque(false);
+
+        lblPillAll = createPill(UiTheme.SURFACE_ALT, UiTheme.BORDER, UiTheme.TEXT_PRIMARY);
+        lblPillHealthy = createPill(new Color(0xDC, 0xFC, 0xE7), new Color(0xBB, 0xF7, 0xD0), new Color(0x16, 0x65, 0x34));
+        lblPillAttention = createPill(new Color(0xFE, 0xF3, 0xC7), new Color(0xFD, 0xE6, 0x8A), new Color(0xB4, 0x53, 0x09));
+
+        pnlPills.add(lblPillAll);
+        pnlPills.add(lblPillHealthy);
+        pnlPills.add(lblPillAttention);
+        toolbar.add(pnlPills, BorderLayout.WEST);
+
+        // Right: Search Input + "+ Add Product" + "Delete"
+        JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rightBox.setOpaque(false);
+
+        txtSearch = new JTextField(18);
+        txtSearch.setFont(UiTheme.FONT_REGULAR);
+        txtSearch.setToolTipText("Search products by code or name (press Enter)");
+        UiTheme.installFocusRing(txtSearch);
+        txtSearch.addActionListener(e -> handleSearch());
+        txtSearch.registerKeyboardAction(
+                e -> clearSearch(),
                 KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_FOCUSED
         );
-        UiTheme.installFocusRing(txtSearchSku);
-        bar.add(txtSearchSku, BorderLayout.CENTER);
 
-        btnSearch = UiTheme.createPrimaryButton("Find Product",
-                new UiTheme.VectorIcon(UiTheme.IconType.SEARCH, 14),
-                "Search for a product by its code or name");
-        btnSearch.addActionListener(e -> handleSearchProduct());
-        bar.add(btnSearch, BorderLayout.EAST);
+        JButton btnSearch = UiTheme.createSecondaryButton("Search", new UiTheme.VectorIcon(UiTheme.IconType.SEARCH, 13), "Search products");
+        btnSearch.addActionListener(e -> handleSearch());
 
-        return bar;
+        btnAddProduct = UiTheme.createPrimaryButton("+ Add Product", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 13), "Open modal to add a new product");
+        btnAddProduct.addActionListener(e -> handleOpenAddDialog());
+
+        btnDeleteProduct = UiTheme.createOutlineDangerButton("Delete", new UiTheme.VectorIcon(UiTheme.IconType.DELETE, 13), "Delete the selected product");
+        btnDeleteProduct.setEnabled(false);
+        btnDeleteProduct.addActionListener(e -> handleDeleteProduct());
+
+        rightBox.add(txtSearch);
+        rightBox.add(btnSearch);
+        rightBox.add(btnAddProduct);
+        rightBox.add(btnDeleteProduct);
+
+        toolbar.add(rightBox, BorderLayout.EAST);
+        return toolbar;
     }
 
-    private JPanel createAddProductCard() {
-        JPanel card = UiTheme.createCardPanel("Add Product");
-        card.setLayout(new GridBagLayout());
-
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(4, 4, 4, 4);
-        g.fill = GridBagConstraints.HORIZONTAL;
-
-        txtNewSku = new JTextField(12);
-        txtNewName = new JTextField(16);
-        txtNewPrice = new JTextField(12);
-        txtNewStock = new JTextField(12);
-
-        txtNewSku.setFont(UiTheme.FONT_REGULAR);
-        txtNewName.setFont(UiTheme.FONT_REGULAR);
-        txtNewPrice.setFont(UiTheme.FONT_REGULAR);
-        txtNewStock.setFont(UiTheme.FONT_REGULAR);
-
-        txtNewSku.setToolTipText("Unique numeric product code (e.g. 150)");
-        txtNewName.setToolTipText("Full name of the product");
-        txtNewPrice.setToolTipText("Price in Philippine Pesos (e.g. 1499.00)");
-        txtNewStock.setToolTipText("Initial quantity available in stock");
-
-        txtNewSku.addActionListener(e -> handleAddProduct());
-        txtNewName.addActionListener(e -> handleAddProduct());
-        txtNewPrice.addActionListener(e -> handleAddProduct());
-        txtNewStock.addActionListener(e -> handleAddProduct());
-
-        UiTheme.installFocusRing(txtNewSku);
-        UiTheme.installFocusRing(txtNewName);
-        UiTheme.installFocusRing(txtNewPrice);
-        UiTheme.installFocusRing(txtNewStock);
-
-        btnAdd = UiTheme.createSuccessButton("Add Product",
-                new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
-                "Register this new product into the catalog");
-        btnAdd.addActionListener(e -> handleAddProduct());
-
-        // Single Column Layout: Code, Name, Price, Quantity
-        g.gridx = 0; g.gridy = 0; g.weightx = 0.0; card.add(new JLabel("Product Code:"), g);
-        g.gridx = 1; g.weightx = 1.0; card.add(txtNewSku, g);
-
-        g.gridx = 0; g.gridy = 1; g.weightx = 0.0; card.add(new JLabel("Product Name:"), g);
-        g.gridx = 1; g.weightx = 1.0; card.add(txtNewName, g);
-
-        g.gridx = 0; g.gridy = 2; g.weightx = 0.0; card.add(new JLabel("Price (₱):"), g);
-        g.gridx = 1; g.weightx = 1.0; card.add(txtNewPrice, g);
-
-        g.gridx = 0; g.gridy = 3; g.weightx = 0.0; card.add(new JLabel("Quantity in Stock:"), g);
-        g.gridx = 1; g.weightx = 1.0; card.add(txtNewStock, g);
-
-        g.gridx = 0; g.gridy = 4; g.gridwidth = 2; g.weightx = 1.0;
-        g.insets = new Insets(8, 4, 2, 4);
-        card.add(btnAdd, g);
-
-        return card;
-    }
-
-    private JPanel createProductDetailsCard() {
-        JPanel card = UiTheme.createCardPanel("Product Details");
-        card.setLayout(new BorderLayout(0, 8));
-
-        lblSearchResult = new JLabel("Click a product in the list, or type its code or name above.");
-        lblSearchResult.setFont(UiTheme.FONT_REGULAR);
-        lblSearchResult.setForeground(UiTheme.TEXT_MUTED);
-        lblSearchResult.setOpaque(true);
-        lblSearchResult.setBackground(UiTheme.SURFACE_ALT);
-        lblSearchResult.setBorder(new CompoundBorder(
-                new LineBorder(UiTheme.BORDER, 1, true),
-                new EmptyBorder(10, 12, 10, 12)
-        ));
-        card.add(lblSearchResult, BorderLayout.CENTER);
-
-        // Delete button (outlined danger style, disabled by default!)
-        JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        btnBar.setBackground(UiTheme.SURFACE);
-
-        btnDelete = UiTheme.createOutlineDangerButton("Delete Product",
-                new UiTheme.VectorIcon(UiTheme.IconType.DELETE, 14),
-                "Remove this product from the inventory");
-        btnDelete.setEnabled(false);
-        btnDelete.addActionListener(e -> handleDeleteProduct());
-        btnBar.add(btnDelete);
-
-        card.add(btnBar, BorderLayout.SOUTH);
-        return card;
-    }
-
-    private JLabel createKpiPill(Color bg, Color border, Color fg) {
+    private JLabel createPill(Color bg, Color border, Color fg) {
         JLabel lbl = new JLabel();
         lbl.setFont(UiTheme.FONT_BADGE);
         lbl.setOpaque(true);
@@ -219,82 +178,25 @@ public class CatalogPanel extends JPanel {
         lbl.setForeground(fg);
         lbl.setBorder(new CompoundBorder(
                 new LineBorder(border, 1, true),
-                new EmptyBorder(3, 8, 3, 8)
+                new EmptyBorder(4, 10, 4, 10)
         ));
         return lbl;
     }
 
-    private void updateKpiCards() {
-        Product[] products = service.getInventoryBst().inOrder();
-        int total = (products != null) ? products.length : 0;
-        int healthy = 0;
-        int attention = 0;
-
-        if (products != null) {
-            for (int i = 0; i < products.length; i++) {
-                if (products[i].getStockQty() > 20) {
-                    healthy++;
-                } else {
-                    attention++;
-                }
-            }
-        }
-
-        if (lblKpiTotal != null) {
-            lblKpiTotal.setText("Total: " + total + " products");
-        }
-        if (lblKpiHealthy != null) {
-            lblKpiHealthy.setText("Healthy: " + healthy + " in stock");
-        }
-        if (lblKpiAttention != null) {
-            lblKpiAttention.setText("Attention: " + attention + " low/out");
-        }
-    }
-
-    private JPanel createProductTableCard() {
-        JPanel card = UiTheme.createCardPanel("Product List");
-        card.setLayout(new BorderLayout(0, 6));
-
-        // KPI stat pill badges (Total, Healthy Stock, Low/Out of Stock)
-        JPanel pnlKpis = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        pnlKpis.setBackground(UiTheme.SURFACE);
-
-        lblKpiTotal = createKpiPill(UiTheme.SURFACE_ALT, UiTheme.BORDER, UiTheme.TEXT_PRIMARY);
-        lblKpiHealthy = createKpiPill(new Color(0xDC, 0xFC, 0xE7), new Color(0xBB, 0xF7, 0xD0), new Color(0x16, 0x65, 0x34));
-        lblKpiAttention = createKpiPill(new Color(0xFE, 0xF3, 0xC7), new Color(0xFD, 0xE6, 0x8A), new Color(0xB4, 0x53, 0x09));
-
-        pnlKpis.add(lblKpiTotal);
-        pnlKpis.add(lblKpiHealthy);
-        pnlKpis.add(lblKpiAttention);
-
-        // Technical details header badge
-        lblTreeHeightBadge = new JLabel();
-        lblTreeHeightBadge.setFont(UiTheme.FONT_BADGE);
-        lblTreeHeightBadge.setOpaque(true);
-        lblTreeHeightBadge.setBackground(UiTheme.SURFACE_ALT);
-        lblTreeHeightBadge.setForeground(UiTheme.TEXT_MUTED);
-        lblTreeHeightBadge.setBorder(new EmptyBorder(2, 6, 2, 6));
-        lblTreeHeightBadge.setVisible(false);
-
-        JPanel headerPanel = new JPanel(new BorderLayout(8, 0));
-        headerPanel.setBackground(UiTheme.SURFACE);
-        headerPanel.add(pnlKpis, BorderLayout.WEST);
-        headerPanel.add(lblTreeHeightBadge, BorderLayout.EAST);
-        card.add(headerPanel, BorderLayout.NORTH);
-
+    private JScrollPane createTable() {
         tblCatalog = new JTable(catalogTableModel);
         UiTheme.configureTable(tblCatalog);
-        tblCatalog.setDefaultRenderer(Object.class, UiTheme.createCatalogCellRenderer());
-        tblCatalog.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblCatalog.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(95);  // Product Code
-        colModel.getColumn(1).setPreferredWidth(260); // Product Name
-        colModel.getColumn(2).setPreferredWidth(120); // Price
-        colModel.getColumn(3).setPreferredWidth(100); // In Stock
-        colModel.getColumn(4).setPreferredWidth(120); // Status
+        colModel.getColumn(0).setPreferredWidth(95);  // PROD CODE
+        colModel.getColumn(1).setPreferredWidth(280); // PRODUCT NAME
+        colModel.getColumn(2).setPreferredWidth(120); // PRICE
+        colModel.getColumn(3).setPreferredWidth(100); // IN STOCK
+        colModel.getColumn(4).setPreferredWidth(120); // STATUS
 
-        // Clicking any row selects product and enables Delete Product button!
+        // Rounded pill status renderer on column 4
+        colModel.getColumn(4).setCellRenderer(new UiTheme.StatusPillRenderer());
+
         tblCatalog.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int row = tblCatalog.getSelectedRow();
@@ -307,119 +209,60 @@ public class CatalogPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblCatalog);
-        card.add(scrollPane, BorderLayout.CENTER);
+        JScrollPane sp = UiTheme.createModernScrollPane(tblCatalog);
+        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        return sp;
+    }
 
-        return card;
+    private JPanel createTableFooter() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(6, 4, 2, 4));
+
+        lblTableSummary = new JLabel("Showing all products in catalog");
+        lblTableSummary.setFont(UiTheme.FONT_HINT);
+        lblTableSummary.setForeground(UiTheme.TEXT_MUTED);
+
+        footer.add(lblTableSummary, BorderLayout.WEST);
+        return footer;
+    }
+
+    private void handleOpenAddDialog() {
+        Frame topFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        AddProductDialog dialog = new AddProductDialog(topFrame, service, mainFrame);
+        dialog.setVisible(true);
+
+        if (dialog.isProductAdded()) {
+            refreshTables();
+        }
     }
 
     private void selectProduct(Product p) {
         this.selectedProduct = p;
-        txtSearchSku.setText(String.valueOf(p.getSkuId()));
-
-        String statusHtml;
-        if (p.getStockQty() == 0) {
-            statusHtml = "<font color='#DC2626'><b>Out of Stock</b></font>";
-        } else if (p.getStockQty() <= 20) {
-            statusHtml = "<font color='#D97706'><b>Low Stock</b></font>";
-        } else {
-            statusHtml = "<font color='#166534'><b>In Stock</b></font>";
-        }
-
-        lblSearchResult.setText(String.format(
-                "<html><body style='font-family: Segoe UI, sans-serif; font-size: 12px;'>"
-                + "<b style='color: #1D4ED8;'>Code #%d</b>: <b>%s</b><br>"
-                + "Price: ₱%,.2f &nbsp;&nbsp;|&nbsp;&nbsp; In Stock: %d units (%s)"
-                + "</body></html>",
-                p.getSkuId(), p.getName(), p.getPrice(), p.getStockQty(), statusHtml
-        ));
-
         updateDeleteButtonState();
-        SwingUtilities.invokeLater(() -> txtSearchSku.requestFocusInWindow());
+        lblTableSummary.setText("Selected: Code #" + p.getSkuId() + " (" + p.getName() + ") • ₱"
+                + String.format("%,.2f", p.getPrice()) + " • " + p.getStockQty() + " units in stock.");
     }
 
     private void updateDeleteButtonState() {
-        btnDelete.setEnabled(selectedProduct != null);
+        btnDeleteProduct.setEnabled(selectedProduct != null);
     }
 
-    private void handleAddProduct() {
-        String skuStr = txtNewSku.getText().trim();
-        String name = txtNewName.getText().trim();
-        String priceStr = txtNewPrice.getText().trim();
-        String stockStr = txtNewStock.getText().trim();
-
-        if (skuStr.isEmpty() || name.isEmpty() || priceStr.isEmpty() || stockStr.isEmpty()) {
-            mainFrame.setFeedback(false, "Please fill in all product fields.");
-            return;
-        }
-
-        int skuId;
-        try {
-            skuId = Integer.parseInt(skuStr);
-            if (skuId <= 0) {
-                mainFrame.setFeedback(false, "Product Code must be a positive number.");
-                return;
-            }
-        } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Product Code must be a valid whole number.");
-            return;
-        }
-
-        double price;
-        try {
-            price = Double.parseDouble(priceStr);
-            if (price < 0) {
-                mainFrame.setFeedback(false, "Price cannot be negative.");
-                return;
-            }
-        } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Price must be a valid number (e.g. 1499.00).");
-            return;
-        }
-
-        int stock;
-        try {
-            stock = Integer.parseInt(stockStr);
-            if (stock < 0) {
-                mainFrame.setFeedback(false, "Quantity in stock cannot be negative.");
-                return;
-            }
-        } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Quantity must be a valid whole number.");
-            return;
-        }
-
-        OpResult result = service.addProduct(skuId, name, price, stock);
-        if (result.isSuccess()) {
-            txtNewSku.setText("");
-            txtNewName.setText("");
-            txtNewPrice.setText("");
-            txtNewStock.setText("");
-            mainFrame.setFeedback(true, "Product '" + name + "' added successfully.");
-            mainFrame.refreshAll();
-        } else {
-            mainFrame.setFeedback(false, result.getMessage());
-            JOptionPane.showMessageDialog(this, result.getMessage(), "Registration Blocked", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void handleSearchProduct() {
-        String query = txtSearchSku.getText().trim();
+    private void handleSearch() {
+        String query = txtSearch.getText().trim();
         if (query.isEmpty()) {
-            mainFrame.setFeedback(false, "Please type a product code or product name to find.");
+            mainFrame.setFeedback(false, "Please type a product code or product name to search.");
             return;
         }
 
         Product product = null;
-        // 1. Try numeric lookup by Product Code first (fast BST lookup)
         try {
             int skuId = Integer.parseInt(query);
             product = service.findProduct(skuId);
         } catch (NumberFormatException ignored) {
-            // Not a numeric code, search by product name
+            // Search by name
         }
 
-        // 2. If not found by numeric code, search by product name (case-insensitive substring)
         if (product == null) {
             product = service.findProductByName(query);
         }
@@ -439,17 +282,23 @@ public class CatalogPanel extends JPanel {
         } else {
             selectedProduct = null;
             updateDeleteButtonState();
-            lblSearchResult.setText("<html><body style='font-family: Segoe UI, sans-serif; font-size: 12px;'>"
-                    + "<font color='#DC2626'><b>Not found:</b> No product found matching '<b>" + query + "</b>'.</font><br>"
-                    + "<span style='color: #6B7280;'>Check the product code or name and try again.</span>"
-                    + "</body></html>");
             mainFrame.setFeedback(false, "No product found matching '" + query + "'.");
+            lblTableSummary.setText("No product found matching '" + query + "'.");
         }
+    }
+
+    private void clearSearch() {
+        txtSearch.setText("");
+        selectedProduct = null;
+        updateDeleteButtonState();
+        tblCatalog.clearSelection();
+        mainFrame.setFeedback(true, "Search cleared.");
+        updateFilterPills();
     }
 
     private void handleDeleteProduct() {
         if (selectedProduct == null) {
-            mainFrame.setFeedback(false, "Please click a product in the list first.");
+            mainFrame.setFeedback(false, "Please select a product row first.");
             return;
         }
 
@@ -463,8 +312,6 @@ public class CatalogPanel extends JPanel {
             OpResult result = service.deleteProduct(skuId);
             if (result.isSuccess()) {
                 selectedProduct = null;
-                txtSearchSku.setText("");
-                lblSearchResult.setText("Click a product in the list, or type its code or name above.");
                 updateDeleteButtonState();
                 mainFrame.setFeedback(true, "Product '" + name + "' was deleted.");
                 mainFrame.refreshAll();
@@ -475,11 +322,41 @@ public class CatalogPanel extends JPanel {
         }
     }
 
+    private void updateFilterPills() {
+        Product[] products = service.getInventoryBst().inOrder();
+        int total = (products != null) ? products.length : 0;
+        int healthy = 0;
+        int attention = 0;
+
+        if (products != null) {
+            for (int i = 0; i < products.length; i++) {
+                if (products[i].getStockQty() > 20) {
+                    healthy++;
+                } else {
+                    attention++;
+                }
+            }
+        }
+
+        if (lblPillAll != null) {
+            lblPillAll.setText("All (" + total + ")");
+        }
+        if (lblPillHealthy != null) {
+            lblPillHealthy.setText("In Stock (" + healthy + ")");
+        }
+        if (lblPillAttention != null) {
+            lblPillAttention.setText("Low / Out (" + attention + ")");
+        }
+        if (lblTableSummary != null && selectedProduct == null) {
+            lblTableSummary.setText("Showing all " + total + " products in catalog");
+        }
+    }
+
     public void refreshTables() {
         catalogTableModel.refresh();
-        updateKpiCards();
+        updateFilterPills();
         if (lblTreeHeightBadge != null && technicalDetails) {
-            lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " ");
+            lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " | Size: " + service.getInventoryBst().size() + " ");
         }
     }
 }
