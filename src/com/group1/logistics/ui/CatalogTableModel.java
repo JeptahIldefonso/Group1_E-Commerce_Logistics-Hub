@@ -7,13 +7,13 @@ import javax.swing.table.AbstractTableModel;
 
 /**
  * Custom AbstractTableModel backed by InventoryBST.inOrder() traversal.
- * Populates rows strictly in ascending order by SKU ID.
+ * Populates rows strictly in ascending order by SKU ID / Product Code.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class CatalogTableModel extends AbstractTableModel {
     private final InventoryBST bst;
     private Product[] cachedProducts;
-    private final String[] columns = {"SKU ID", "Product Name", "Price (PHP)", "Stock Qty", "Status"};
+    private final String[] columns = {"Product Code", "Product Name", "Price", "In Stock", "Status"};
 
     public CatalogTableModel(InventoryBST bst) {
         this.bst = bst;
@@ -54,15 +54,24 @@ public class CatalogTableModel extends AbstractTableModel {
         }
         Product product = cachedProducts[row];
         switch (col) {
-            case 0: return product.getSkuId();
-            case 1: return product.getName();
-            case 2: return "PHP " + String.format("%.2f", product.getPrice());
-            case 3: return product.getStockQty();
+            case 0:
+                return product.getSkuId();
+            case 1:
+                return product.getName();
+            case 2:
+                return "₱" + String.format("%,.2f", product.getPrice());
+            case 3:
+                return product.getStockQty();
             case 4:
-                if (product.getStockQty() == 0) return "Out of Stock";
-                if (product.getStockQty() <= 10) return "Low Stock";
+                if (product.getStockQty() == 0) {
+                    return "Out of Stock";
+                }
+                if (product.getStockQty() <= 20) {
+                    return "Low Stock";
+                }
                 return "In Stock";
-            default: return "";
+            default:
+                return "";
         }
     }
 

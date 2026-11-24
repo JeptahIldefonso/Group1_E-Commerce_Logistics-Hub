@@ -1,20 +1,37 @@
 package com.group1.logistics.ui;
 
 import com.group1.logistics.datastructures.RestockStack;
+import com.group1.logistics.models.Product;
 import com.group1.logistics.models.RestockAction;
+import com.group1.logistics.service.FulfillmentService;
 
 import javax.swing.table.AbstractTableModel;
 
 /**
  * Custom AbstractTableModel backed directly by RestockStack.
  * Displays audit log with newest entries on top (index 0).
+ * Displays friendly product names and supports technical details toggling.
+ * Pure standard Java Swing; zero Java Collections.
  */
 public class RestockTableModel extends AbstractTableModel {
     private final RestockStack stack;
-    private final String[] columns = {"Action ID", "SKU ID", "Units Added", "Sequence No"};
+    private final FulfillmentService service;
+    private boolean technicalDetails = false;
+
+    private final String[] columns = {"Restock #", "Product", "Quantity Added", "Order of Entry"};
+
+    public RestockTableModel(RestockStack stack, FulfillmentService service) {
+        this.stack = stack;
+        this.service = service;
+    }
 
     public RestockTableModel(RestockStack stack) {
-        this.stack = stack;
+        this(stack, null);
+    }
+
+    public void setTechnicalDetails(boolean enabled) {
+        this.technicalDetails = enabled;
+        fireTableDataChanged();
     }
 
     @Override
@@ -39,11 +56,22 @@ public class RestockTableModel extends AbstractTableModel {
             return "";
         }
         switch (col) {
-            case 0: return "Action #" + action.getActionId();
-            case 1: return "SKU #" + action.getSkuId();
-            case 2: return "+" + action.getQuantityAdded() + " units";
-            case 3: return "Seq #" + action.getSequenceNo();
-            default: return "";
+            case 0:
+                return "Restock #" + action.getActionId();
+            case 1:
+                if (service != null) {
+                    Product p = service.findProduct(action.getSkuId());
+                    if (p != null) {
+                        return p.getName();
+                    }
+                }
+                return "SKU #" + action.getSkuId();
+            case 2:
+                return "+" + action.getQuantityAdded() + " units";
+            case 3:
+                return technicalDetails ? "Seq #" + action.getSequenceNo() : String.valueOf(row + 1);
+            default:
+                return "";
         }
     }
 

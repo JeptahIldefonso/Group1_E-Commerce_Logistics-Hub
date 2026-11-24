@@ -10,70 +10,75 @@ import javax.swing.border.MatteBorder;
 import java.awt.*;
 
 /**
- * Main application frame for the E-Commerce Fulfillment & Logistics System.
- * Clean, modern layout with non-blocking feedback and status bar.
+ * Main application frame: Order & Shipping Manager.
+ * 4 Dedicated Tabs: Orders, Products, Restock, Shipments.
+ * Includes "Show technical details" toggle and clean "Ready." message bar.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class MainFrame extends JFrame {
     private final FulfillmentService service;
 
-    private final OrdersRestockPanel ordersRestockPanel;
+    private final OrdersPanel ordersPanel;
     private final CatalogPanel catalogPanel;
+    private final RestockPanel restockPanel;
     private final FreightPanel freightPanel;
 
     private final JPanel pnlFeedback;
     private final JLabel lblFeedback;
     private final JLabel lblStatusBar;
+    private final JCheckBox chkTechnicalDetails;
 
     public MainFrame(FulfillmentService service) {
-        super("E-Commerce Fulfillment & Logistics Hub (Group 1)");
+        super("Order & Shipping Manager");
         this.service = service;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 720);
+        setSize(1220, 740);
         setMinimumSize(new Dimension(1024, 650));
         setLocationRelativeTo(null); // Center on screen
 
         getContentPane().setBackground(UiTheme.BG_WINDOW);
         setLayout(new BorderLayout(0, 0));
 
-        // Initialize Tab Panels
-        this.ordersRestockPanel = new OrdersRestockPanel(service, this);
+        // Initialize 4 Tab Panels (One job per tab)
+        this.ordersPanel = new OrdersPanel(service, this);
         this.catalogPanel = new CatalogPanel(service, this);
+        this.restockPanel = new RestockPanel(service, this);
         this.freightPanel = new FreightPanel(service, this);
 
-        // Tabbed Pane with concise, clear titles
+        // Tabbed Pane with concise 4 tabs
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
         tabbedPane.setBackground(UiTheme.BG_WINDOW);
 
-        tabbedPane.addTab("Orders & Restock", ordersRestockPanel);
-        tabbedPane.addTab("Product Catalog", catalogPanel);
-        tabbedPane.addTab("Freight Logistics", freightPanel);
+        tabbedPane.addTab("Orders", ordersPanel);
+        tabbedPane.addTab("Products", catalogPanel);
+        tabbedPane.addTab("Restock", restockPanel);
+        tabbedPane.addTab("Shipments", freightPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
 
-        // Bottom Container: Inline Feedback Bar + System Status Bar
+        // Bottom Container: Message Bar + Status Bar with Technical Details toggle
         JPanel bottomContainer = new JPanel(new BorderLayout(0, 0));
         bottomContainer.setBackground(UiTheme.SURFACE);
 
-        // 1. Non-blocking Inline Feedback Bar (Clean text, zero broken unicode boxes)
+        // 1. Message Bar (Default: "Ready.", Green for Success, Red for Errors)
         pnlFeedback = new JPanel(new BorderLayout(8, 0));
-        pnlFeedback.setBackground(UiTheme.FEEDBACK_SUCCESS_BG);
+        pnlFeedback.setBackground(UiTheme.FEEDBACK_READY_BG);
         pnlFeedback.setBorder(new CompoundBorder(
                 new MatteBorder(1, 0, 0, 0, UiTheme.BORDER),
                 new EmptyBorder(6, 14, 6, 14)
         ));
 
-        lblFeedback = new JLabel("[OK] System Ready — 14 products in catalog, 5 pending orders, 5 dispatched packages.");
+        lblFeedback = new JLabel("Ready.");
         lblFeedback.setFont(UiTheme.FONT_BOLD);
-        lblFeedback.setForeground(UiTheme.FEEDBACK_SUCCESS_TEXT);
+        lblFeedback.setForeground(UiTheme.FEEDBACK_READY_TEXT);
         pnlFeedback.add(lblFeedback, BorderLayout.CENTER);
 
         bottomContainer.add(pnlFeedback, BorderLayout.NORTH);
 
-        // 2. System Status Bar
-        JPanel pnlStatus = new JPanel(new BorderLayout(8, 0));
+        // 2. System Status Bar + Technical Details Checkbox
+        JPanel pnlStatus = new JPanel(new BorderLayout(10, 0));
         pnlStatus.setBackground(UiTheme.SURFACE_ALT);
         pnlStatus.setBorder(new CompoundBorder(
                 new MatteBorder(1, 0, 0, 0, UiTheme.BORDER_CARD),
@@ -83,13 +88,18 @@ public class MainFrame extends JFrame {
         lblStatusBar = new JLabel();
         lblStatusBar.setFont(UiTheme.FONT_REGULAR);
         lblStatusBar.setForeground(UiTheme.TEXT_PRIMARY);
-        pnlStatus.add(lblStatusBar, BorderLayout.WEST);
+        pnlStatus.add(lblStatusBar, BorderLayout.CENTER);
 
-        JLabel lblFooter = new JLabel("Group 1 Logistics Hub · Java 17");
-        lblFooter.setFont(UiTheme.FONT_HINT);
-        lblFooter.setForeground(UiTheme.TEXT_MUTED);
-        pnlStatus.add(lblFooter, BorderLayout.EAST);
+        // Technical details toggle (OFF by default for normal users)
+        chkTechnicalDetails = new JCheckBox("Show technical details");
+        chkTechnicalDetails.setFont(UiTheme.FONT_HINT);
+        chkTechnicalDetails.setForeground(UiTheme.TEXT_MUTED);
+        chkTechnicalDetails.setBackground(UiTheme.SURFACE_ALT);
+        chkTechnicalDetails.setFocusPainted(false);
+        chkTechnicalDetails.setToolTipText("Toggle visibility of algorithm names, tree height, and sequence numbers");
+        chkTechnicalDetails.addActionListener(e -> handleToggleTechnicalDetails());
 
+        pnlStatus.add(chkTechnicalDetails, BorderLayout.EAST);
         bottomContainer.add(pnlStatus, BorderLayout.SOUTH);
 
         add(bottomContainer, BorderLayout.SOUTH);
@@ -97,8 +107,16 @@ public class MainFrame extends JFrame {
         refreshAll();
     }
 
+    private void handleToggleTechnicalDetails() {
+        boolean enabled = chkTechnicalDetails.isSelected();
+        catalogPanel.setTechnicalDetails(enabled);
+        restockPanel.setTechnicalDetails(enabled);
+        freightPanel.setTechnicalDetails(enabled);
+        updateStatusBarText();
+    }
+
     /**
-     * Updates the non-blocking inline feedback banner with the result of an operation.
+     * Updates the message bar with the result of an operation.
      */
     public void setFeedback(OpResult result) {
         if (result == null) return;
@@ -106,10 +124,14 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Updates the non-blocking inline feedback banner with custom status and message.
+     * Updates the message bar with custom status and message.
      */
     public void setFeedback(boolean success, String message) {
-        if (success) {
+        if (message == null || message.trim().isEmpty()) {
+            pnlFeedback.setBackground(UiTheme.FEEDBACK_READY_BG);
+            lblFeedback.setForeground(UiTheme.FEEDBACK_READY_TEXT);
+            lblFeedback.setText("Ready.");
+        } else if (success) {
             pnlFeedback.setBackground(UiTheme.FEEDBACK_SUCCESS_BG);
             lblFeedback.setForeground(UiTheme.FEEDBACK_SUCCESS_TEXT);
             lblFeedback.setText("[OK] " + message);
@@ -122,21 +144,37 @@ public class MainFrame extends JFrame {
         pnlFeedback.repaint();
     }
 
+    private void updateStatusBarText() {
+        boolean tech = chkTechnicalDetails != null && chkTechnicalDetails.isSelected();
+        if (tech) {
+            lblStatusBar.setText(String.format(
+                    "Waiting Orders: %d/20 (Circular Queue)  |  Restocks: %d/20 (Stack)  |  Catalog: %d SKUs (Tree Height: %d)  |  Shipped Packages: %d",
+                    service.getOrderQueue().size(),
+                    service.getRestockStack().size(),
+                    service.getInventoryBst().size(),
+                    service.getInventoryBst().height(),
+                    service.getPackageArray().size()
+            ));
+        } else {
+            lblStatusBar.setText(String.format(
+                    "Waiting Orders: %d  |  Restocks You Can Undo: %d  |  Products: %d  |  Shipped Packages: %d",
+                    service.getOrderQueue().size(),
+                    service.getRestockStack().size(),
+                    service.getInventoryBst().size(),
+                    service.getPackageArray().size()
+            ));
+        }
+    }
+
     /**
-     * Refreshes all table models, dropdowns, button states, and status counts.
+     * Refreshes all 4 table models, dynamic dropdowns, button states, and status counts.
      */
     public void refreshAll() {
-        ordersRestockPanel.refreshTables();
+        ordersPanel.refreshTables();
         catalogPanel.refreshTables();
+        restockPanel.refreshTables();
         freightPanel.refreshTables();
 
-        lblStatusBar.setText(String.format(
-                "Queue: %d/20   |   Restock Stack: %d/20   |   Catalog: %d SKUs (Tree Height: %d)   |   Freight: %d Packages",
-                service.getOrderQueue().size(),
-                service.getRestockStack().size(),
-                service.getInventoryBst().size(),
-                service.getInventoryBst().height(),
-                service.getPackageArray().size()
-        ));
+        updateStatusBarText();
     }
 }
