@@ -225,8 +225,6 @@ public class SidebarPanel extends JPanel {
         bottomContainer.add(operatorBox);
 
         add(bottomContainer, BorderLayout.SOUTH);
-
-        selectTab(1); // Default to Products (or Orders)
     }
 
     public void selectTab(int index) {

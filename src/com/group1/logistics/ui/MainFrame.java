@@ -50,11 +50,7 @@ public class MainFrame extends JFrame {
         getContentPane().setBackground(UiTheme.BG_WINDOW);
         setLayout(new BorderLayout(0, 0));
 
-        // 1. Left Sidebar Navigation
-        this.sidebarPanel = new SidebarPanel(this);
-        add(sidebarPanel, BorderLayout.WEST);
-
-        // 2. Center Content Area (CardLayout)
+        // 1. Center Content Area (CardLayout)
         this.cardLayout = new CardLayout();
         this.pnlContent = new JPanel(cardLayout);
         pnlContent.setBackground(UiTheme.BG_WINDOW);
@@ -70,6 +66,10 @@ public class MainFrame extends JFrame {
         pnlContent.add(freightPanel, CARD_SHIPMENTS);
 
         add(pnlContent, BorderLayout.CENTER);
+
+        // 2. Left Sidebar Navigation
+        this.sidebarPanel = new SidebarPanel(this);
+        add(sidebarPanel, BorderLayout.WEST);
 
         // 3. Bottom Feedback Notification Strip
         pnlFeedback = new JPanel(new BorderLayout(8, 0));
@@ -116,6 +116,9 @@ public class MainFrame extends JFrame {
      * Switches the active module view in the center CardLayout.
      */
     public void showTab(int index) {
+        if (cardLayout == null || pnlContent == null) {
+            return;
+        }
         switch (index) {
             case 0:
                 cardLayout.show(pnlContent, CARD_ORDERS);
