@@ -134,11 +134,11 @@ public class MainFrame extends JFrame {
         } else if (success) {
             pnlFeedback.setBackground(UiTheme.FEEDBACK_SUCCESS_BG);
             lblFeedback.setForeground(UiTheme.FEEDBACK_SUCCESS_TEXT);
-            lblFeedback.setText("[OK] " + message);
+            lblFeedback.setText(message);
         } else {
             pnlFeedback.setBackground(UiTheme.FEEDBACK_ERROR_BG);
             lblFeedback.setForeground(UiTheme.FEEDBACK_ERROR_TEXT);
-            lblFeedback.setText("[Notice] " + message);
+            lblFeedback.setText(message);
         }
         pnlFeedback.revalidate();
         pnlFeedback.repaint();

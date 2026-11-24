@@ -114,7 +114,7 @@ public class FulfillmentService {
             return OpResult.err("Delivery priority must be between 1 and 5.");
         }
         if (orderQueue.isFull()) {
-            return OpResult.err("Order Queue is full (" + orderQueue.capacity() + "/" + orderQueue.capacity() + "). Please dispatch orders first.");
+            return OpResult.err("The waiting list is full (" + orderQueue.capacity() + " orders). Please ship or cancel an order first.");
         }
 
         Order order = new Order(nextOrderId++, customerName, skuId, quantity, destination, priority, sequenceCounter++);
@@ -185,7 +185,7 @@ public class FulfillmentService {
             return OpResult.err("Quantity to add must be at least 1.");
         }
         if (restockStack.isFull()) {
-            return OpResult.err("Audit Stack is full (" + restockStack.capacity() + "/" + restockStack.capacity() + "). Cannot restock (BR-05).");
+            return OpResult.err("The restock history is full (" + restockStack.capacity() + " actions). Please undo or restart to add more.");
         }
 
         Product product = findProduct(skuId);

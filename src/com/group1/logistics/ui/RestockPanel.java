@@ -49,6 +49,7 @@ public class RestockPanel extends JPanel {
 
         refreshProductDropdown();
         updateButtonStatesAndSummary();
+        SwingUtilities.invokeLater(() -> txtRestockQty.requestFocusInWindow());
     }
 
     public void setTechnicalDetails(boolean enabled) {
@@ -237,5 +238,6 @@ public class RestockPanel extends JPanel {
         restockTableModel.fireTableDataChanged();
         refreshProductDropdown();
         updateButtonStatesAndSummary();
+        SwingUtilities.invokeLater(() -> txtRestockQty.requestFocusInWindow());
     }
 }

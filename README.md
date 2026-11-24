@@ -126,9 +126,10 @@ src/com/group1/logistics/
 │   └── FileStore.java                   <-- pipe-delimited CSV load/save via java.io only [SHOULD]
 └── ui/
     ├── MainFrame.java                   <-- JFrame: JTabbedPane + live status bar
-    ├── OrdersRestockPanel.java          <-- Tab 1: Queue, Dispatch/Reject, Restock & Undo
-    ├── CatalogPanel.java                <-- Tab 2: Register SKU, Search, In-Order Table, Delete
-    ├── FreightPanel.java                <-- Tab 3: Freight Manifest, Sort Buttons, Header Clicks
+    ├── OrdersPanel.java                 <-- Tab 1: Orders (Place Order, Queue, Ship/Cancel)
+    ├── CatalogPanel.java                <-- Tab 2: Products (Register Product, Find, In-Order Table, Delete)
+    ├── RestockPanel.java                <-- Tab 3: Restock (Add Stock, History, Safe Undo)
+    ├── FreightPanel.java                <-- Tab 4: Shipments (Sorting Controls, Header Clicks)
     └── (4 AbstractTableModel subclasses: QueueTableModel, RestockTableModel, CatalogTableModel, FreightTableModel)
 
 test/com/group1/logistics/               <-- console unit/service tests (excluded from JAR)
@@ -347,7 +348,7 @@ flowchart TD
   - Implement `FulfillmentService` enforcing rules `BR-01` through `BR-09` (atomic restock, safe subtraction undo, peek-validate-commit dispatch).
   - Verify complete workflow logic without Swing via `ServiceTest`.
 - **Phase 3 (Desktop Swing GUI & Event Integration):**
-  - Build `MainFrame` and the 3 tab panels (`OrdersRestockPanel`, `CatalogPanel`, `FreightPanel`).
+  - Build `MainFrame` and the 4 dedicated tab panels (`OrdersPanel`, `CatalogPanel`, `RestockPanel`, `FreightPanel`).
   - Create the four `AbstractTableModel` subclasses and wire all button actions and header clicks to `FulfillmentService`.
 - **Phase 4 (Persistence, Compliance, JAR Packaging & Defense Prep):**
   - Add optional pipe-delimited CSV `FileStore` with balanced seed data.

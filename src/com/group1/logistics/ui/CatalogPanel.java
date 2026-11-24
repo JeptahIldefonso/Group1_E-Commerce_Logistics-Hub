@@ -66,6 +66,7 @@ public class CatalogPanel extends JPanel {
         add(createProductTableCard(), BorderLayout.CENTER);
 
         updateDeleteButtonState();
+        SwingUtilities.invokeLater(() -> txtSearchSku.requestFocusInWindow());
     }
 
     public void setTechnicalDetails(boolean enabled) {
@@ -254,6 +255,7 @@ public class CatalogPanel extends JPanel {
         ));
 
         updateDeleteButtonState();
+        SwingUtilities.invokeLater(() -> txtSearchSku.requestFocusInWindow());
     }
 
     private void updateDeleteButtonState() {

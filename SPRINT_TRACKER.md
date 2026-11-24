@@ -38,12 +38,12 @@
 
 | Task ID | Component | Task / Deliverable | Status |
 | :--- | :--- | :--- | :---: |
-| **P3-01** | UI Core | Build `MainFrame.java` (JTabbedPane with 3 tabs + live bottom status bar) | `[x] Base Done` |
-| **P3-02** | Tab 1 Panel | Build `OrdersRestockPanel.java` (Queue form/table, Dispatch/Reject, Restock, Undo) | `[ ] Pending` |
-| **P3-03** | Tab 2 Panel | Build `CatalogPanel.java` (Register SKU, Search autofill, In-Order table, Delete) | `[ ] Pending` |
-| **P3-04** | Tab 3 Panel | Build `FreightPanel.java` (Parcel table, Sort by Weight, Sort by Priority, Asc/Desc) | `[ ] Pending` |
-| **P3-05** | Table Models | Implement 4 `AbstractTableModel` subclasses (strictly zero `java.util.Vector`) | `[ ] Pending` |
-| **P3-06** | Header Clicks | Attach `MouseAdapter` to freight table headers calling custom sorters | `[ ] Pending` |
+| **P3-01** | UI Core | Build `MainFrame.java` (4 dedicated tabs + live status bar + technical toggle) | `[x] Complete` |
+| **P3-02** | Orders Tab | Build `OrdersPanel.java` (Place Order form, full-width Queue, Ship/Cancel actions) | `[x] Complete` |
+| **P3-03** | Products Tab | Build `CatalogPanel.java` (Find Product, single-column Add form, In-Order table, Delete) | `[x] Complete` |
+| **P3-04** | Restock Tab | Build `RestockPanel.java` (Add Stock form, Restock history, Safe Undo rollback) | `[x] Complete` |
+| **P3-05** | Shipments Tab | Build `FreightPanel.java` (Parcel table, Sort by Weight, Sort by Delivery Speed, Header Clicks) | `[x] Complete` |
+| **P3-06** | Table Models | Implement 4 `AbstractTableModel` subclasses (strictly zero `java.util.Vector`) | `[x] Complete` |
 
 ---
 

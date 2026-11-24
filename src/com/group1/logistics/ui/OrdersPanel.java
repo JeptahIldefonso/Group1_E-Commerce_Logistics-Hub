@@ -83,6 +83,9 @@ public class OrdersPanel extends JPanel {
 
         refreshProductDropdown();
         updateButtonStatesAndSummary();
+
+        // Focus cursor in first field
+        SwingUtilities.invokeLater(() -> txtCustomer.requestFocusInWindow());
     }
 
     private JPanel createOrderFormCard() {
@@ -312,7 +315,7 @@ public class OrdersPanel extends JPanel {
                 "Shipping Order #" + front.getOrderId() + " (" + front.getCustomerName() + ")\n" +
                 "Item: " + front.getQuantity() + " × " + productName + "\n" +
                 "Deliver To: " + front.getDestination() + "\n\n" +
-                "Enter parcel weight in kg (e.g. 2.45):",
+                "Enter parcel weight in kg (0.01 - 50.00 kg):",
                 "Ship Order", JOptionPane.QUESTION_MESSAGE);
 
         if (input == null) {
@@ -321,6 +324,11 @@ public class OrdersPanel extends JPanel {
 
         try {
             double weight = Double.parseDouble(input.trim());
+            if (weight < 0.01 || weight > 50.00) {
+                mainFrame.setFeedback(false, "Parcel weight must be between 0.01 and 50.00 kg.");
+                JOptionPane.showMessageDialog(this, "Parcel weight must be between 0.01 and 50.00 kg.", "Invalid Weight", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             OpResult result = service.dispatchNext(weight);
             if (result.isSuccess()) {
                 mainFrame.setFeedback(true, "Order #" + front.getOrderId() + " shipped to " + front.getDestination() + ".");
@@ -363,5 +371,8 @@ public class OrdersPanel extends JPanel {
         queueTableModel.fireTableDataChanged();
         refreshProductDropdown();
         updateButtonStatesAndSummary();
+
+        // Focus cursor in first field
+        SwingUtilities.invokeLater(() -> txtCustomer.requestFocusInWindow());
     }
 }
