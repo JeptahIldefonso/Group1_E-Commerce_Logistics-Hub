@@ -4,14 +4,18 @@ import com.group1.logistics.service.FulfillmentService;
 import com.group1.logistics.service.OpResult;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * Tab 3: Freight Logistics Hub (Module 3 — Custom Sorting Engine).
- * Demonstrates QuickSort (by Weight) and InsertionSort (by Priority).
- * Includes clickable column headers backed by custom sorters (zero TableRowSorter).
+ * Tab 3: Freight Logistics Hub.
+ * Clean, modern freight sorting panel.
+ * Pure standard Java Swing; zero Java Collections.
  */
 public class FreightPanel extends JPanel {
     private final FulfillmentService service;
@@ -19,53 +23,122 @@ public class FreightPanel extends JPanel {
     private final FreightTableModel freightTableModel;
 
     private boolean ascending = true;
+    private String currentSortField = "Weight (kg)";
+    private String currentAlgorithm = "QuickSort";
     private JLabel lblActiveSort;
+    private JButton btnToggleOrder;
+    private JTable tblFreight;
 
     public FreightPanel(FulfillmentService service, MainFrame mainFrame) {
         this.service = service;
         this.mainFrame = mainFrame;
         this.freightTableModel = new FreightTableModel(service.getPackageArray());
 
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(0, 10));
+        setBackground(UiTheme.BG_WINDOW);
+        setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        // Top Toolbar
-        JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        topPanel.setBorder(BorderFactory.createTitledBorder("Freight Cargo Sorting Controls (Zero Built-in Sorters)"));
+        // Sorting Controls Panel
+        add(createSortingControlsSubPanel(), BorderLayout.NORTH);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        JButton btnSortWeight = new JButton("Sort by Weight (QuickSort - Hoare)");
-        JButton btnSortPriority = new JButton("Sort by Priority (InsertionSort - Stable)");
-        JButton btnToggleOrder = new JButton("Toggle: Ascending");
+        // Dispatched Packages Table Panel
+        add(createTableSubPanel(), BorderLayout.CENTER);
+    }
 
-        btnSortWeight.setFont(new Font("SansSerif", Font.BOLD, 12));
-        btnSortPriority.setFont(new Font("SansSerif", Font.BOLD, 12));
+    private JPanel createSortingControlsSubPanel() {
+        JPanel card = UiTheme.createCardPanel("Cargo Sorting");
+        card.setLayout(new BorderLayout(0, 8));
 
-        btnPanel.add(btnSortWeight);
-        btnPanel.add(btnSortPriority);
-        btnPanel.add(btnToggleOrder);
+        // Button Toolbar
+        JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        btnBar.setBackground(UiTheme.SURFACE);
 
-        topPanel.add(btnPanel, BorderLayout.NORTH);
+        JButton btnSortWeight = UiTheme.createPrimaryButton("Sort by Weight", "Sorts cargo by weight (QuickSort)");
+        JButton btnSortPriority = UiTheme.createPrimaryButton("Sort by Priority", "Sorts cargo by delivery priority (InsertionSort)");
+        btnToggleOrder = UiTheme.createSecondaryButton("Order: Ascending", "Toggles sort direction");
 
-        lblActiveSort = new JLabel("Active Sort: Natural Dispatch Order (Click a button or table header to re-sort)");
-        lblActiveSort.setFont(new Font("SansSerif", Font.ITALIC, 12));
-        lblActiveSort.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5));
-        topPanel.add(lblActiveSort, BorderLayout.SOUTH);
+        btnBar.add(btnSortWeight);
+        btnBar.add(btnSortPriority);
+        btnBar.add(btnToggleOrder);
 
-        add(topPanel, BorderLayout.NORTH);
+        card.add(btnBar, BorderLayout.NORTH);
 
-        // Center Table
-        JPanel tablePanel = new JPanel(new BorderLayout(5, 5));
-        tablePanel.setBorder(BorderFactory.createTitledBorder("Dispatched Cargo Packages (Stored in Primitive FreightPackageArray)"));
+        // Active Sort Status Strip
+        JPanel statusStrip = new JPanel(new BorderLayout(8, 0));
+        statusStrip.setBackground(UiTheme.SURFACE_ALT);
+        statusStrip.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER, 1, true),
+                new EmptyBorder(6, 12, 6, 12)
+        ));
 
-        JTable tblFreight = new JTable(freightTableModel);
+        lblActiveSort = new JLabel();
+        lblActiveSort.setFont(UiTheme.FONT_SUBTITLE);
+        lblActiveSort.setForeground(UiTheme.TEXT_PRIMARY);
+        updateActiveSortLabel();
+
+        statusStrip.add(lblActiveSort, BorderLayout.CENTER);
+        card.add(statusStrip, BorderLayout.SOUTH);
+
+        // Listeners
+        btnSortWeight.addActionListener(e -> {
+            currentSortField = "Weight (kg)";
+            currentAlgorithm = "QuickSort";
+            OpResult result = service.sortPackages(1, 1, ascending);
+            updateActiveSortLabel();
+            freightTableModel.fireTableDataChanged();
+            mainFrame.setFeedback(result);
+        });
+
+        btnSortPriority.addActionListener(e -> {
+            currentSortField = "Delivery Priority";
+            currentAlgorithm = "InsertionSort";
+            OpResult result = service.sortPackages(2, 2, ascending);
+            updateActiveSortLabel();
+            freightTableModel.fireTableDataChanged();
+            mainFrame.setFeedback(result);
+        });
+
+        btnToggleOrder.addActionListener(e -> {
+            ascending = !ascending;
+            btnToggleOrder.setText("Order: " + (ascending ? "Ascending" : "Descending"));
+            if (currentSortField.contains("Weight")) {
+                service.sortPackages(1, 1, ascending);
+            } else if (currentSortField.contains("Priority")) {
+                service.sortPackages(2, 2, ascending);
+            } else if (currentSortField.contains("Package ID")) {
+                service.sortPackages(1, 3, ascending);
+            } else if (currentSortField.contains("Destination")) {
+                service.sortPackages(2, 4, ascending);
+            }
+            updateActiveSortLabel();
+            freightTableModel.fireTableDataChanged();
+            mainFrame.setFeedback(true, "Sorted in " + (ascending ? "Ascending" : "Descending") + " order.");
+        });
+
+        return card;
+    }
+
+    private JPanel createTableSubPanel() {
+        JPanel card = UiTheme.createCardPanel("Dispatched Freight Packages");
+        card.setLayout(new BorderLayout(0, 6));
+
+        tblFreight = new JTable(freightTableModel);
+        UiTheme.configureTable(tblFreight);
+        tblFreight.setDefaultRenderer(Object.class, UiTheme.createFreightCellRenderer());
         tblFreight.setFillsViewportHeight(true);
 
-        // Strict Compliance Safeguard: Disable Swing's built-in TableRowSorter (Trap 5)
         tblFreight.setAutoCreateRowSorter(false);
         tblFreight.getTableHeader().setReorderingAllowed(false);
 
-        // Attach MouseAdapter to table header so clicking columns runs our custom sorters!
+        TableColumnModel colModel = tblFreight.getColumnModel();
+        colModel.getColumn(0).setPreferredWidth(100); // Package ID
+        colModel.getColumn(1).setPreferredWidth(80);  // Order ID
+        colModel.getColumn(2).setPreferredWidth(160); // Destination Hub
+        colModel.getColumn(3).setPreferredWidth(100); // Weight (kg)
+        colModel.getColumn(4).setPreferredWidth(120); // Delivery Priority
+        colModel.getColumn(5).setPreferredWidth(95);  // Dispatch Seq
+
+        // Clicking column header sorts dynamically
         tblFreight.getTableHeader().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -74,48 +147,45 @@ public class FreightPanel extends JPanel {
             }
         });
 
-        tablePanel.add(new JScrollPane(tblFreight), BorderLayout.CENTER);
-        add(tablePanel, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(tblFreight);
+        scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
+        card.add(scrollPane, BorderLayout.CENTER);
 
-        // Event listeners
-        btnSortWeight.addActionListener(e -> {
-            OpResult result = service.sortPackages(1, 1, ascending);
-            lblActiveSort.setText("Active Sort: Weight (kg) | Algorithm: QuickSort (Hoare) | " + (ascending ? "Ascending" : "Descending"));
-            freightTableModel.fireTableDataChanged();
-        });
-
-        btnSortPriority.addActionListener(e -> {
-            OpResult result = service.sortPackages(2, 2, ascending);
-            lblActiveSort.setText("Active Sort: Delivery Priority | Algorithm: InsertionSort (Stable) | " + (ascending ? "Ascending" : "Descending"));
-            freightTableModel.fireTableDataChanged();
-        });
-
-        btnToggleOrder.addActionListener(e -> {
-            ascending = !ascending;
-            btnToggleOrder.setText("Toggle: " + (ascending ? "Ascending" : "Descending"));
-        });
+        return card;
     }
 
     private void handleHeaderClick(int col) {
-        // Map columns to custom sorters:
-        // Col 0: Package ID -> QuickSort (Criteria 3)
-        // Col 2: Destination -> InsertionSort (Criteria 4)
-        // Col 3: Weight -> QuickSort (Criteria 1)
-        // Col 4: Priority -> InsertionSort (Criteria 2)
         if (col == 3) {
-            service.sortPackages(1, 1, ascending);
-            lblActiveSort.setText("Active Sort: Weight (kg) via Header Click | QuickSort | " + (ascending ? "Ascending" : "Descending"));
+            currentSortField = "Weight (kg)";
+            currentAlgorithm = "QuickSort";
+            OpResult result = service.sortPackages(1, 1, ascending);
+            mainFrame.setFeedback(result);
         } else if (col == 4) {
-            service.sortPackages(2, 2, ascending);
-            lblActiveSort.setText("Active Sort: Priority via Header Click | InsertionSort | " + (ascending ? "Ascending" : "Descending"));
+            currentSortField = "Delivery Priority";
+            currentAlgorithm = "InsertionSort";
+            OpResult result = service.sortPackages(2, 2, ascending);
+            mainFrame.setFeedback(result);
         } else if (col == 0) {
-            service.sortPackages(1, 3, ascending);
-            lblActiveSort.setText("Active Sort: Package ID via Header Click | QuickSort | " + (ascending ? "Ascending" : "Descending"));
+            currentSortField = "Package ID";
+            currentAlgorithm = "QuickSort";
+            OpResult result = service.sortPackages(1, 3, ascending);
+            mainFrame.setFeedback(result);
         } else if (col == 2) {
-            service.sortPackages(2, 4, ascending);
-            lblActiveSort.setText("Active Sort: Destination Hub via Header Click | InsertionSort | " + (ascending ? "Ascending" : "Descending"));
+            currentSortField = "Destination Hub";
+            currentAlgorithm = "InsertionSort";
+            OpResult result = service.sortPackages(2, 4, ascending);
+            mainFrame.setFeedback(result);
         }
+        updateActiveSortLabel();
         freightTableModel.fireTableDataChanged();
+    }
+
+    private void updateActiveSortLabel() {
+        String direction = ascending ? "Ascending" : "Descending";
+        lblActiveSort.setText(String.format(
+                "Active Sort: %s  |  Algorithm: %s  |  Direction: %s  (Tip: Click table column headers to sort dynamically)",
+                currentSortField, currentAlgorithm, direction
+        ));
     }
 
     public void refreshTables() {

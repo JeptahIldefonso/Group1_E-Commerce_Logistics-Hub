@@ -5,11 +5,16 @@ import com.group1.logistics.service.FulfillmentService;
 import com.group1.logistics.service.OpResult;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
 /**
- * Tab 2: SKU Catalog Index (Custom Binary Search Tree - BST).
- * Supports recursive insertion, O(log n) target search, in-order catalog table, and 3-case deletion.
+ * Tab 2: Product Catalog.
+ * Clean product registration, search, and deletion.
+ * Pure standard Java Swing; zero Java Collections.
  */
 public class CatalogPanel extends JPanel {
     private final FulfillmentService service;
@@ -21,93 +26,198 @@ public class CatalogPanel extends JPanel {
     private JTextField txtNewName;
     private JTextField txtNewPrice;
     private JTextField txtNewStock;
+    private JButton btnAdd;
 
     // Search and Delete controls
     private JTextField txtSearchSku;
+    private JButton btnSearch;
+    private JButton btnDelete;
     private JLabel lblSearchResult;
+    private JTable tblCatalog;
 
     public CatalogPanel(FulfillmentService service, MainFrame mainFrame) {
         this.service = service;
         this.mainFrame = mainFrame;
         this.catalogTableModel = new CatalogTableModel(service.getInventoryBst());
 
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(0, 10));
+        setBackground(UiTheme.BG_WINDOW);
+        setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        // Top Panel: Registration & Search forms
-        JPanel topContainer = new JPanel(new GridLayout(1, 2, 10, 10));
-        topContainer.add(createRegistrationSubPanel());
-        topContainer.add(createSearchDeleteSubPanel());
-        add(topContainer, BorderLayout.NORTH);
+        // Top Forms: Add New Product & Search/Manage
+        JPanel topForms = new JPanel(new GridLayout(1, 2, 10, 0));
+        topForms.setBackground(UiTheme.BG_WINDOW);
+        topForms.add(createRegistrationSubPanel());
+        topForms.add(createSearchDeleteSubPanel());
+        add(topForms, BorderLayout.NORTH);
 
-        // Center Panel: Master Catalog Table
-        JPanel tablePanel = new JPanel(new BorderLayout(5, 5));
-        tablePanel.setBorder(BorderFactory.createTitledBorder("Master Inventory Catalog (Populated via BST In-Order Traversal)"));
-
-        JTable tblCatalog = new JTable(catalogTableModel);
-        tblCatalog.setFillsViewportHeight(true);
-        tablePanel.add(new JScrollPane(tblCatalog), BorderLayout.CENTER);
-
-        add(tablePanel, BorderLayout.CENTER);
+        // Center: Master Catalog Table
+        add(createCatalogTableSubPanel(), BorderLayout.CENTER);
     }
 
     private JPanel createRegistrationSubPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("Register New SKU (Recursive BST Insert)"));
+        JPanel card = UiTheme.createCardPanel("Add New Product");
+        card.setLayout(new BorderLayout(0, 8));
 
-        JPanel form = new JPanel(new GridLayout(5, 2, 5, 5));
-        txtNewSku = new JTextField();
-        txtNewName = new JTextField();
-        txtNewPrice = new JTextField();
-        txtNewStock = new JTextField();
-        JButton btnAdd = new JButton("Add Product to Tree");
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(UiTheme.SURFACE);
+        form.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(8, 10, 8, 10)
+        ));
 
-        form.add(new JLabel("SKU ID (Unique Int):"));
-        form.add(txtNewSku);
-        form.add(new JLabel("Product Name:"));
-        form.add(txtNewName);
-        form.add(new JLabel("Unit Price (PHP):"));
-        form.add(txtNewPrice);
-        form.add(new JLabel("Initial Stock:"));
-        form.add(txtNewStock);
-        form.add(new JLabel(""));
-        form.add(btnAdd);
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(3, 4, 3, 4);
+        g.fill = GridBagConstraints.HORIZONTAL;
 
-        panel.add(form, BorderLayout.CENTER);
+        txtNewSku = new JTextField(8);
+        txtNewName = new JTextField(15);
+        txtNewPrice = new JTextField(8);
+        txtNewStock = new JTextField(8);
 
+        txtNewSku.setFont(UiTheme.FONT_REGULAR);
+        txtNewName.setFont(UiTheme.FONT_REGULAR);
+        txtNewPrice.setFont(UiTheme.FONT_REGULAR);
+        txtNewStock.setFont(UiTheme.FONT_REGULAR);
+
+        txtNewSku.addActionListener(e -> handleAddProduct());
+        txtNewName.addActionListener(e -> handleAddProduct());
+        txtNewPrice.addActionListener(e -> handleAddProduct());
+        txtNewStock.addActionListener(e -> handleAddProduct());
+
+        btnAdd = UiTheme.createSuccessButton("Add Product", "Adds new product to catalog");
         btnAdd.addActionListener(e -> handleAddProduct());
-        return panel;
+
+        // Row 0: SKU ID & Stock
+        g.gridy = 0;
+        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("SKU ID:"), g);
+        g.gridx = 1; g.weightx = 1.0; form.add(txtNewSku, g);
+        g.gridx = 2; g.weightx = 0.0; form.add(new JLabel("Stock:"), g);
+        g.gridx = 3; g.weightx = 1.0; form.add(txtNewStock, g);
+
+        // Row 1: Product Name
+        g.gridy = 1;
+        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Name:"), g);
+        g.gridx = 1; g.gridwidth = 3; g.weightx = 1.0; form.add(txtNewName, g);
+        g.gridwidth = 1;
+
+        // Row 2: Price
+        g.gridy = 2;
+        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Price (PHP):"), g);
+        g.gridx = 1; g.gridwidth = 3; g.weightx = 1.0; form.add(txtNewPrice, g);
+        g.gridwidth = 1;
+
+        // Row 3: Button
+        g.gridy = 3;
+        g.gridx = 0; g.gridwidth = 4; g.weightx = 1.0;
+        g.insets = new Insets(6, 4, 2, 4);
+        form.add(btnAdd, g);
+
+        card.add(form, BorderLayout.CENTER);
+        return card;
     }
 
     private JPanel createSearchDeleteSubPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("Product Lookup & Deletion (O(log n) Search / 3-Case Delete)"));
+        JPanel card = UiTheme.createCardPanel("Search & Manage");
+        card.setLayout(new BorderLayout(0, 8));
 
-        JPanel searchBar = new JPanel(new BorderLayout(5, 5));
+        // Top Search Bar
+        JPanel searchBar = new JPanel(new BorderLayout(8, 0));
+        searchBar.setBackground(UiTheme.SURFACE);
+        searchBar.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(6, 10, 6, 10)
+        ));
+
+        JLabel lblPrompt = new JLabel("Search SKU:");
+        lblPrompt.setFont(UiTheme.FONT_BOLD);
+        searchBar.add(lblPrompt, BorderLayout.WEST);
+
         txtSearchSku = new JTextField();
-        JButton btnSearch = new JButton("Search SKU");
-        searchBar.add(new JLabel("Enter SKU ID: "), BorderLayout.WEST);
+        txtSearchSku.setFont(UiTheme.FONT_REGULAR);
+        txtSearchSku.addActionListener(e -> handleSearchProduct());
         searchBar.add(txtSearchSku, BorderLayout.CENTER);
+
+        btnSearch = UiTheme.createPrimaryButton("Search", "Finds product by SKU ID");
+        btnSearch.addActionListener(e -> handleSearchProduct());
         searchBar.add(btnSearch, BorderLayout.EAST);
 
-        panel.add(searchBar, BorderLayout.NORTH);
+        card.add(searchBar, BorderLayout.NORTH);
 
         // Result display area
-        lblSearchResult = new JLabel("<html><i>Enter a SKU ID above and click Search...</i></html>");
-        lblSearchResult.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)
+        lblSearchResult = new JLabel("Select a product row below or type a SKU ID above.");
+        lblSearchResult.setFont(UiTheme.FONT_REGULAR);
+        lblSearchResult.setForeground(UiTheme.TEXT_MUTED);
+        lblSearchResult.setOpaque(true);
+        lblSearchResult.setBackground(UiTheme.SURFACE_ALT);
+        lblSearchResult.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)
         ));
-        panel.add(lblSearchResult, BorderLayout.CENTER);
+        card.add(lblSearchResult, BorderLayout.CENTER);
 
-        JButton btnDelete = new JButton("Discontinue / Delete SKU (3-Case Deletion)");
-        btnDelete.setForeground(new Color(180, 0, 0));
-        panel.add(btnDelete, BorderLayout.SOUTH);
-
-        btnSearch.addActionListener(e -> handleSearchProduct());
+        // Delete button
+        btnDelete = UiTheme.createDangerButton("Delete Product", "Removes product from catalog");
         btnDelete.addActionListener(e -> handleDeleteProduct());
+        card.add(btnDelete, BorderLayout.SOUTH);
 
-        return panel;
+        return card;
+    }
+
+    private JPanel createCatalogTableSubPanel() {
+        JPanel card = UiTheme.createCardPanel("Product Catalog");
+        card.setLayout(new BorderLayout(0, 6));
+
+        tblCatalog = new JTable(catalogTableModel);
+        UiTheme.configureTable(tblCatalog);
+        tblCatalog.setDefaultRenderer(Object.class, UiTheme.createCatalogCellRenderer());
+        tblCatalog.setFillsViewportHeight(true);
+
+        TableColumnModel colModel = tblCatalog.getColumnModel();
+        colModel.getColumn(0).setPreferredWidth(70);  // SKU ID
+        colModel.getColumn(1).setPreferredWidth(230); // Product Name
+        colModel.getColumn(2).setPreferredWidth(110); // Price
+        colModel.getColumn(3).setPreferredWidth(90);  // Stock Qty
+        colModel.getColumn(4).setPreferredWidth(120); // Status
+
+        // Clicking any row auto-populates the search panel
+        tblCatalog.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = tblCatalog.getSelectedRow();
+                if (row >= 0) {
+                    Product p = catalogTableModel.getProductAt(row);
+                    if (p != null) {
+                        txtSearchSku.setText(String.valueOf(p.getSkuId()));
+                        updateSearchResultDisplay(p);
+                    }
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(tblCatalog);
+        scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
+        card.add(scrollPane, BorderLayout.CENTER);
+
+        return card;
+    }
+
+    private void updateSearchResultDisplay(Product p) {
+        String statusText;
+        if (p.getStockQty() == 0) {
+            statusText = "<font color='#991B1B'><b>Out of Stock</b></font>";
+        } else if (p.getStockQty() <= 10) {
+            statusText = "<font color='#B45309'><b>Low Stock</b></font>";
+        } else {
+            statusText = "<font color='#166534'><b>In Stock</b></font>";
+        }
+
+        lblSearchResult.setText(String.format(
+                "<html><body style='font-family: Segoe UI, sans-serif; font-size: 11px;'>"
+                + "<b style='color: #1D4ED8;'>SKU #%d</b>: <b>%s</b><br>"
+                + "Price: PHP %.2f &nbsp;&nbsp;|&nbsp;&nbsp; Stock: %d units (%s)"
+                + "</body></html>",
+                p.getSkuId(), p.getName(), p.getPrice(), p.getStockQty(), statusText
+        ));
     }
 
     private void handleAddProduct() {
@@ -117,7 +227,7 @@ public class CatalogPanel extends JPanel {
         String stockStr = txtNewStock.getText().trim();
 
         if (skuStr.isEmpty() || name.isEmpty() || priceStr.isEmpty() || stockStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in all product registration fields.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            mainFrame.setFeedback(false, "Please fill in all product registration fields.");
             return;
         }
 
@@ -127,25 +237,25 @@ public class CatalogPanel extends JPanel {
             int stock = Integer.parseInt(stockStr);
 
             OpResult result = service.addProduct(skuId, name, price, stock);
+            mainFrame.setFeedback(result);
             if (result.isSuccess()) {
                 txtNewSku.setText("");
                 txtNewName.setText("");
                 txtNewPrice.setText("");
                 txtNewStock.setText("");
                 mainFrame.refreshAll();
-                JOptionPane.showMessageDialog(this, result.getMessage(), "Product Registered", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this, result.getMessage(), "Registration Failed", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "SKU ID and Stock must be integers; Price must be a valid number.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            mainFrame.setFeedback(false, "SKU ID and Stock must be integers; Price must be numeric.");
         }
     }
 
     private void handleSearchProduct() {
         String skuStr = txtSearchSku.getText().trim();
         if (skuStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter a SKU ID to search.", "Input Required", JOptionPane.WARNING_MESSAGE);
+            mainFrame.setFeedback(false, "Please enter a SKU ID to search.");
             return;
         }
 
@@ -153,22 +263,32 @@ public class CatalogPanel extends JPanel {
             int skuId = Integer.parseInt(skuStr);
             Product product = service.findProduct(skuId);
             if (product != null) {
-                lblSearchResult.setText("<html><b>Found:</b> " + product.getName() + "<br>" +
-                        "<b>Price:</b> PHP " + String.format("%.2f", product.getPrice()) + "<br>" +
-                        "<b>Current Stock:</b> " + product.getStockQty() + " units</html>");
+                updateSearchResultDisplay(product);
+                mainFrame.setFeedback(true, "Found SKU #" + skuId + " (" + product.getName() + ").");
+
+                for (int i = 0; i < tblCatalog.getRowCount(); i++) {
+                    Product p = catalogTableModel.getProductAt(i);
+                    if (p != null && p.getSkuId() == skuId) {
+                        tblCatalog.setRowSelectionInterval(i, i);
+                        tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(i, 0, true));
+                        break;
+                    }
+                }
             } else {
-                lblSearchResult.setText("<html><font color='red'><b>Product not found:</b> SKU #" + skuId + " does not exist in catalog.</font></html>");
-                JOptionPane.showMessageDialog(this, "SKU #" + skuId + " was not found in the inventory tree.", "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                lblSearchResult.setText("<html><body style='font-family: Segoe UI, sans-serif; font-size: 11px;'>"
+                        + "<font color='#DC2626'><b>Not found:</b> SKU #" + skuId + " does not exist in catalog.</font>"
+                        + "</body></html>");
+                mainFrame.setFeedback(false, "SKU #" + skuId + " was not found in catalog.");
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "SKU ID must be a valid integer.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            mainFrame.setFeedback(false, "SKU ID must be a valid integer.");
         }
     }
 
     private void handleDeleteProduct() {
         String skuStr = txtSearchSku.getText().trim();
         if (skuStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please search or enter the SKU ID you wish to delete.", "Input Required", JOptionPane.WARNING_MESSAGE);
+            mainFrame.setFeedback(false, "Please select or enter the SKU ID you wish to delete.");
             return;
         }
 
@@ -176,28 +296,27 @@ public class CatalogPanel extends JPanel {
             int skuId = Integer.parseInt(skuStr);
             Product product = service.findProduct(skuId);
             if (product == null) {
-                JOptionPane.showMessageDialog(this, "SKU #" + skuId + " does not exist in the catalog.", "Not Found", JOptionPane.WARNING_MESSAGE);
+                mainFrame.setFeedback(false, "SKU #" + skuId + " does not exist in the catalog.");
                 return;
             }
 
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to delete SKU #" + skuId + " (" + product.getName() + ")?\n" +
-                    "This will execute the 3-Case BST deletion algorithm.",
-                    "Confirm Deletion (BR-07)", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Are you sure you want to delete SKU #" + skuId + " (" + product.getName() + ")?",
+                    "Confirm Deletion", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 OpResult result = service.deleteProduct(skuId);
+                mainFrame.setFeedback(result);
                 if (result.isSuccess()) {
                     txtSearchSku.setText("");
-                    lblSearchResult.setText("<html><i>Product deleted. Enter a SKU ID above...</i></html>");
+                    lblSearchResult.setText("Select a product row below or type a SKU ID above.");
                     mainFrame.refreshAll();
-                    JOptionPane.showMessageDialog(this, result.getMessage(), "Product Deleted", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     JOptionPane.showMessageDialog(this, result.getMessage(), "Deletion Failed", JOptionPane.ERROR_MESSAGE);
                 }
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "SKU ID must be a valid integer.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            mainFrame.setFeedback(false, "SKU ID must be a valid integer.");
         }
     }
 

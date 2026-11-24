@@ -8,11 +8,12 @@ import javax.swing.table.AbstractTableModel;
 /**
  * Custom AbstractTableModel backed by InventoryBST.inOrder() traversal.
  * Populates rows strictly in ascending order by SKU ID.
+ * Pure standard Java Swing; zero Java Collections.
  */
 public class CatalogTableModel extends AbstractTableModel {
     private final InventoryBST bst;
     private Product[] cachedProducts;
-    private final String[] columns = {"SKU ID", "Product Name", "Price (PHP)", "Stock Qty", "Stock Status"};
+    private final String[] columns = {"SKU ID", "Product Name", "Price (PHP)", "Stock Qty", "Status"};
 
     public CatalogTableModel(InventoryBST bst) {
         this.bst = bst;
@@ -22,6 +23,13 @@ public class CatalogTableModel extends AbstractTableModel {
     public void refresh() {
         this.cachedProducts = bst != null ? bst.inOrder() : new Product[0];
         fireTableDataChanged();
+    }
+
+    public Product getProductAt(int row) {
+        if (cachedProducts != null && row >= 0 && row < cachedProducts.length) {
+            return cachedProducts[row];
+        }
+        return null;
     }
 
     @Override
