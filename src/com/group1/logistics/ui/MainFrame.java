@@ -22,6 +22,7 @@ public class MainFrame extends JFrame {
     private final CatalogPanel catalogPanel;
     private final RestockPanel restockPanel;
     private final FreightPanel freightPanel;
+    private final JTabbedPane tabbedPane;
 
     private final JPanel pnlFeedback;
     private final JLabel lblFeedback;
@@ -47,7 +48,7 @@ public class MainFrame extends JFrame {
         this.freightPanel = new FreightPanel(service, this);
 
         // Tabbed Pane with concise 4 tabs
-        JTabbedPane tabbedPane = new JTabbedPane();
+        this.tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
         tabbedPane.setBackground(UiTheme.BG_WINDOW);
 
@@ -55,6 +56,28 @@ public class MainFrame extends JFrame {
         tabbedPane.addTab("Products", catalogPanel);
         tabbedPane.addTab("Restock", restockPanel);
         tabbedPane.addTab("Shipments", freightPanel);
+
+        // Keyboard navigation hotkeys (Ctrl + 1..4)
+        getRootPane().registerKeyboardAction(
+                e -> tabbedPane.setSelectedIndex(0),
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+                e -> tabbedPane.setSelectedIndex(1),
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+                e -> tabbedPane.setSelectedIndex(2),
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_3, java.awt.event.InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+                e -> tabbedPane.setSelectedIndex(3),
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_4, java.awt.event.InputEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -174,6 +197,13 @@ public class MainFrame extends JFrame {
         catalogPanel.refreshTables();
         restockPanel.refreshTables();
         freightPanel.refreshTables();
+
+        if (tabbedPane != null) {
+            tabbedPane.setTitleAt(0, "Orders (" + service.getOrderQueue().size() + ")");
+            tabbedPane.setTitleAt(1, "Products (" + service.getInventoryBst().size() + ")");
+            tabbedPane.setTitleAt(2, "Restock (" + service.getRestockStack().size() + ")");
+            tabbedPane.setTitleAt(3, "Shipments (" + service.getPackageArray().size() + ")");
+        }
 
         updateStatusBarText();
     }

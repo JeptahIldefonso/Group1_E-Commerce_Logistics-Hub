@@ -125,8 +125,13 @@ public class OrdersPanel extends JPanel {
         cmbPriority.setFont(UiTheme.FONT_REGULAR);
         cmbPriority.setToolTipText("Select delivery speed priority");
 
-        btnPlaceOrder = UiTheme.createPrimaryButton("Place Order", "Submit and add this order to the waiting list");
+        btnPlaceOrder = UiTheme.createPrimaryButton("Place Order",
+                new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
+                "Submit and add this order to the waiting list");
         btnPlaceOrder.addActionListener(e -> handlePlaceOrder());
+
+        UiTheme.installFocusRing(txtCustomer);
+        UiTheme.installFocusRing(txtQuantity);
 
         // Row 0: Customer Name & Quantity
         g.gridy = 0;
@@ -176,8 +181,7 @@ public class OrdersPanel extends JPanel {
         colModel.getColumn(5).setPreferredWidth(160); // Deliver To
         colModel.getColumn(6).setPreferredWidth(140); // Priority
 
-        JScrollPane scrollPane = new JScrollPane(tblOrders);
-        scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
+        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblOrders);
         card.add(scrollPane, BorderLayout.CENTER);
 
         // Bottom Controls: Next Order summary + Ship & Cancel buttons
@@ -198,8 +202,12 @@ public class OrdersPanel extends JPanel {
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         btnBar.setBackground(UiTheme.SURFACE);
 
-        btnShipNext = UiTheme.createPrimaryButton("Ship Next Order", "Ship the next order in line and prompt for weight");
-        btnCancelNext = UiTheme.createOutlineDangerButton("Cancel Next Order", "Cancel the next order in line without deducting stock");
+        btnShipNext = UiTheme.createPrimaryButton("Ship Next Order",
+                new UiTheme.VectorIcon(UiTheme.IconType.SHIP, 15),
+                "Ship the next order in line and prompt for weight");
+        btnCancelNext = UiTheme.createOutlineDangerButton("Cancel Next Order",
+                new UiTheme.VectorIcon(UiTheme.IconType.CANCEL, 13),
+                "Cancel the next order in line without deducting stock");
 
         btnShipNext.addActionListener(e -> handleShipNext());
         btnCancelNext.addActionListener(e -> handleCancelNext());

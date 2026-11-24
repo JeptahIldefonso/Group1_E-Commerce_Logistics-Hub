@@ -72,8 +72,11 @@ public class RestockPanel extends JPanel {
         txtRestockQty.setFont(UiTheme.FONT_REGULAR);
         txtRestockQty.setToolTipText("Number of units added to inventory");
         txtRestockQty.addActionListener(e -> handleAddStock());
+        UiTheme.installFocusRing(txtRestockQty);
 
-        btnAddStock = UiTheme.createSuccessButton("Add Stock", "Increase stock for this product and log entry");
+        btnAddStock = UiTheme.createSuccessButton("Add Stock",
+                new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
+                "Increase stock for this product and log entry");
         btnAddStock.addActionListener(e -> handleAddStock());
 
         // Row 0: Select Product & Quantity
@@ -108,8 +111,7 @@ public class RestockPanel extends JPanel {
         colModel.getColumn(2).setPreferredWidth(120); // Quantity Added
         colModel.getColumn(3).setPreferredWidth(110); // Order of Entry
 
-        JScrollPane scrollPane = new JScrollPane(tblRestock);
-        scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
+        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblRestock);
         card.add(scrollPane, BorderLayout.CENTER);
 
         // Bottom Controls: Summary + Undo button
@@ -130,7 +132,9 @@ public class RestockPanel extends JPanel {
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         btnBar.setBackground(UiTheme.SURFACE);
 
-        btnUndo = UiTheme.createWarningButton("Undo Last Restock", "Roll back the most recent restock and subtract stock");
+        btnUndo = UiTheme.createWarningButton("Undo Last Restock",
+                new UiTheme.VectorIcon(UiTheme.IconType.UNDO, 14),
+                "Roll back the most recent restock and subtract stock");
         btnUndo.addActionListener(e -> handleUndo());
         btnBar.add(btnUndo);
 

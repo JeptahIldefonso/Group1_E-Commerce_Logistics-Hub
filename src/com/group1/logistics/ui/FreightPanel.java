@@ -60,8 +60,12 @@ public class FreightPanel extends JPanel {
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
         btnBar.setBackground(UiTheme.SURFACE);
 
-        JButton btnSortWeight = UiTheme.createPrimaryButton("Sort by Weight", "Order packages by parcel weight");
-        JButton btnSortSpeed = UiTheme.createPrimaryButton("Sort by Delivery Speed", "Order packages by delivery urgency");
+        JButton btnSortWeight = UiTheme.createPrimaryButton("Sort by Weight",
+                new UiTheme.VectorIcon(UiTheme.IconType.WEIGHT, 14),
+                "Order packages by parcel weight");
+        JButton btnSortSpeed = UiTheme.createPrimaryButton("Sort by Delivery Speed",
+                new UiTheme.VectorIcon(UiTheme.IconType.SPEED, 14),
+                "Order packages by delivery urgency");
         btnToggleOrder = UiTheme.createSecondaryButton("Lightest First", "Toggle between lightest first and heaviest first");
 
         btnBar.add(btnSortWeight);
@@ -166,8 +170,7 @@ public class FreightPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(tblFreight);
-        scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
+        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblFreight);
         card.add(scrollPane, BorderLayout.CENTER);
 
         return card;

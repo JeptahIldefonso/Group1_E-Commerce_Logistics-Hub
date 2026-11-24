@@ -38,6 +38,9 @@ public class CatalogPanel extends JPanel {
 
     private Product selectedProduct = null;
     private JLabel lblTreeHeightBadge;
+    private JLabel lblKpiTotal;
+    private JLabel lblKpiHealthy;
+    private JLabel lblKpiAttention;
 
     public CatalogPanel(FulfillmentService service, MainFrame mainFrame) {
         this.service = service;
@@ -65,6 +68,7 @@ public class CatalogPanel extends JPanel {
         // 2. Center: Product List Table
         add(createProductTableCard(), BorderLayout.CENTER);
 
+        updateKpiCards();
         updateDeleteButtonState();
         SwingUtilities.invokeLater(() -> txtSearchSku.requestFocusInWindow());
     }
@@ -95,9 +99,12 @@ public class CatalogPanel extends JPanel {
         txtSearchSku.setFont(UiTheme.FONT_REGULAR);
         txtSearchSku.setToolTipText("Type a product code");
         txtSearchSku.addActionListener(e -> handleSearchProduct());
+        UiTheme.installFocusRing(txtSearchSku);
         bar.add(txtSearchSku, BorderLayout.CENTER);
 
-        btnSearch = UiTheme.createPrimaryButton("Find Product", "Search for a product by its code");
+        btnSearch = UiTheme.createPrimaryButton("Find Product",
+                new UiTheme.VectorIcon(UiTheme.IconType.SEARCH, 14),
+                "Search for a product by its code");
         btnSearch.addActionListener(e -> handleSearchProduct());
         bar.add(btnSearch, BorderLayout.EAST);
 
@@ -132,7 +139,14 @@ public class CatalogPanel extends JPanel {
         txtNewPrice.addActionListener(e -> handleAddProduct());
         txtNewStock.addActionListener(e -> handleAddProduct());
 
-        btnAdd = UiTheme.createSuccessButton("Add Product", "Register this new product into the catalog");
+        UiTheme.installFocusRing(txtNewSku);
+        UiTheme.installFocusRing(txtNewName);
+        UiTheme.installFocusRing(txtNewPrice);
+        UiTheme.installFocusRing(txtNewStock);
+
+        btnAdd = UiTheme.createSuccessButton("Add Product",
+                new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
+                "Register this new product into the catalog");
         btnAdd.addActionListener(e -> handleAddProduct());
 
         // Single Column Layout: Code, Name, Price, Quantity
@@ -174,7 +188,9 @@ public class CatalogPanel extends JPanel {
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnBar.setBackground(UiTheme.SURFACE);
 
-        btnDelete = UiTheme.createOutlineDangerButton("Delete Product", "Remove this product from the inventory");
+        btnDelete = UiTheme.createOutlineDangerButton("Delete Product",
+                new UiTheme.VectorIcon(UiTheme.IconType.DELETE, 14),
+                "Remove this product from the inventory");
         btnDelete.setEnabled(false);
         btnDelete.addActionListener(e -> handleDeleteProduct());
         btnBar.add(btnDelete);
@@ -183,9 +199,61 @@ public class CatalogPanel extends JPanel {
         return card;
     }
 
+    private JLabel createKpiPill(Color bg, Color border, Color fg) {
+        JLabel lbl = new JLabel();
+        lbl.setFont(UiTheme.FONT_BADGE);
+        lbl.setOpaque(true);
+        lbl.setBackground(bg);
+        lbl.setForeground(fg);
+        lbl.setBorder(new CompoundBorder(
+                new LineBorder(border, 1, true),
+                new EmptyBorder(3, 8, 3, 8)
+        ));
+        return lbl;
+    }
+
+    private void updateKpiCards() {
+        Product[] products = service.getInventoryBst().inOrder();
+        int total = (products != null) ? products.length : 0;
+        int healthy = 0;
+        int attention = 0;
+
+        if (products != null) {
+            for (int i = 0; i < products.length; i++) {
+                if (products[i].getStockQty() > 20) {
+                    healthy++;
+                } else {
+                    attention++;
+                }
+            }
+        }
+
+        if (lblKpiTotal != null) {
+            lblKpiTotal.setText("Total: " + total + " products");
+        }
+        if (lblKpiHealthy != null) {
+            lblKpiHealthy.setText("Healthy: " + healthy + " in stock");
+        }
+        if (lblKpiAttention != null) {
+            lblKpiAttention.setText("Attention: " + attention + " low/out");
+        }
+    }
+
     private JPanel createProductTableCard() {
         JPanel card = UiTheme.createCardPanel("Product List");
         card.setLayout(new BorderLayout(0, 6));
+
+        // KPI stat pill badges (Total, Healthy Stock, Low/Out of Stock)
+        JPanel pnlKpis = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        pnlKpis.setBackground(UiTheme.SURFACE);
+
+        lblKpiTotal = createKpiPill(UiTheme.SURFACE_ALT, UiTheme.BORDER, UiTheme.TEXT_PRIMARY);
+        lblKpiHealthy = createKpiPill(new Color(0xDC, 0xFC, 0xE7), new Color(0xBB, 0xF7, 0xD0), new Color(0x16, 0x65, 0x34));
+        lblKpiAttention = createKpiPill(new Color(0xFE, 0xF3, 0xC7), new Color(0xFD, 0xE6, 0x8A), new Color(0xB4, 0x53, 0x09));
+
+        pnlKpis.add(lblKpiTotal);
+        pnlKpis.add(lblKpiHealthy);
+        pnlKpis.add(lblKpiAttention);
 
         // Technical details header badge
         lblTreeHeightBadge = new JLabel();
@@ -196,8 +264,9 @@ public class CatalogPanel extends JPanel {
         lblTreeHeightBadge.setBorder(new EmptyBorder(2, 6, 2, 6));
         lblTreeHeightBadge.setVisible(false);
 
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        JPanel headerPanel = new JPanel(new BorderLayout(8, 0));
         headerPanel.setBackground(UiTheme.SURFACE);
+        headerPanel.add(pnlKpis, BorderLayout.WEST);
         headerPanel.add(lblTreeHeightBadge, BorderLayout.EAST);
         card.add(headerPanel, BorderLayout.NORTH);
 
@@ -226,8 +295,7 @@ public class CatalogPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(tblCatalog);
-        scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
+        JScrollPane scrollPane = UiTheme.createModernScrollPane(tblCatalog);
         card.add(scrollPane, BorderLayout.CENTER);
 
         return card;
@@ -388,6 +456,7 @@ public class CatalogPanel extends JPanel {
 
     public void refreshTables() {
         catalogTableModel.refresh();
+        updateKpiCards();
         if (lblTreeHeightBadge != null && technicalDetails) {
             lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " ");
         }
