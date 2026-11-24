@@ -97,14 +97,26 @@ public class CatalogPanel extends JPanel {
 
         txtSearchSku = new JTextField();
         txtSearchSku.setFont(UiTheme.FONT_REGULAR);
-        txtSearchSku.setToolTipText("Type a product code");
+        txtSearchSku.setToolTipText("Type a product code or product name");
         txtSearchSku.addActionListener(e -> handleSearchProduct());
+        txtSearchSku.registerKeyboardAction(
+                e -> {
+                    txtSearchSku.setText("");
+                    selectedProduct = null;
+                    updateDeleteButtonState();
+                    lblSearchResult.setText("Click a product in the list, or type its code or name above.");
+                    tblCatalog.clearSelection();
+                    mainFrame.setFeedback(true, "Search cleared.");
+                },
+                KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_FOCUSED
+        );
         UiTheme.installFocusRing(txtSearchSku);
         bar.add(txtSearchSku, BorderLayout.CENTER);
 
         btnSearch = UiTheme.createPrimaryButton("Find Product",
                 new UiTheme.VectorIcon(UiTheme.IconType.SEARCH, 14),
-                "Search for a product by its code");
+                "Search for a product by its code or name");
         btnSearch.addActionListener(e -> handleSearchProduct());
         bar.add(btnSearch, BorderLayout.EAST);
 
@@ -173,7 +185,7 @@ public class CatalogPanel extends JPanel {
         JPanel card = UiTheme.createCardPanel("Product Details");
         card.setLayout(new BorderLayout(0, 8));
 
-        lblSearchResult = new JLabel("Click a product in the list, or type its code above.");
+        lblSearchResult = new JLabel("Click a product in the list, or type its code or name above.");
         lblSearchResult.setFont(UiTheme.FONT_REGULAR);
         lblSearchResult.setForeground(UiTheme.TEXT_MUTED);
         lblSearchResult.setOpaque(true);
@@ -392,37 +404,46 @@ public class CatalogPanel extends JPanel {
     }
 
     private void handleSearchProduct() {
-        String skuStr = txtSearchSku.getText().trim();
-        if (skuStr.isEmpty()) {
-            mainFrame.setFeedback(false, "Please type a product code to find.");
+        String query = txtSearchSku.getText().trim();
+        if (query.isEmpty()) {
+            mainFrame.setFeedback(false, "Please type a product code or product name to find.");
             return;
         }
 
+        Product product = null;
+        // 1. Try numeric lookup by Product Code first (fast BST lookup)
         try {
-            int skuId = Integer.parseInt(skuStr);
-            Product product = service.findProduct(skuId);
-            if (product != null) {
-                selectProduct(product);
-                mainFrame.setFeedback(true, "Found " + product.getName() + " (Code #" + skuId + ").");
+            int skuId = Integer.parseInt(query);
+            product = service.findProduct(skuId);
+        } catch (NumberFormatException ignored) {
+            // Not a numeric code, search by product name
+        }
 
-                for (int i = 0; i < tblCatalog.getRowCount(); i++) {
-                    Product p = catalogTableModel.getProductAt(i);
-                    if (p != null && p.getSkuId() == skuId) {
-                        tblCatalog.setRowSelectionInterval(i, i);
-                        tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(i, 0, true));
-                        break;
-                    }
+        // 2. If not found by numeric code, search by product name (case-insensitive substring)
+        if (product == null) {
+            product = service.findProductByName(query);
+        }
+
+        if (product != null) {
+            selectProduct(product);
+            mainFrame.setFeedback(true, "Found " + product.getName() + " (Code #" + product.getSkuId() + ").");
+
+            for (int i = 0; i < tblCatalog.getRowCount(); i++) {
+                Product p = catalogTableModel.getProductAt(i);
+                if (p != null && p.getSkuId() == product.getSkuId()) {
+                    tblCatalog.setRowSelectionInterval(i, i);
+                    tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(i, 0, true));
+                    break;
                 }
-            } else {
-                selectedProduct = null;
-                updateDeleteButtonState();
-                lblSearchResult.setText("<html><body style='font-family: Segoe UI, sans-serif; font-size: 12px;'>"
-                        + "<font color='#DC2626'><b>Not found:</b> No product with Code #" + skuId + " exists.</font>"
-                        + "</body></html>");
-                mainFrame.setFeedback(false, "Product Code #" + skuId + " was not found.");
             }
-        } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Product Code must be a valid whole number.");
+        } else {
+            selectedProduct = null;
+            updateDeleteButtonState();
+            lblSearchResult.setText("<html><body style='font-family: Segoe UI, sans-serif; font-size: 12px;'>"
+                    + "<font color='#DC2626'><b>Not found:</b> No product found matching '<b>" + query + "</b>'.</font><br>"
+                    + "<span style='color: #6B7280;'>Check the product code or name and try again.</span>"
+                    + "</body></html>");
+            mainFrame.setFeedback(false, "No product found matching '" + query + "'.");
         }
     }
 
@@ -443,7 +464,7 @@ public class CatalogPanel extends JPanel {
             if (result.isSuccess()) {
                 selectedProduct = null;
                 txtSearchSku.setText("");
-                lblSearchResult.setText("Click a product in the list, or type its code above.");
+                lblSearchResult.setText("Click a product in the list, or type its code or name above.");
                 updateDeleteButtonState();
                 mainFrame.setFeedback(true, "Product '" + name + "' was deleted.");
                 mainFrame.refreshAll();

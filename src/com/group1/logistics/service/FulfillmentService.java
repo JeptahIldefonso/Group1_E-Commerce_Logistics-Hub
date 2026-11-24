@@ -76,6 +76,28 @@ public class FulfillmentService {
         return inventoryBst.search(skuId);
     }
 
+    /**
+     * Case-insensitive product search by name or substring.
+     * Searches all products in the catalog using in-order traversal array.
+     */
+    public Product findProductByName(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return null;
+        }
+        String q = query.trim().toLowerCase();
+        Product[] products = inventoryBst.inOrder();
+        if (products != null) {
+            for (int i = 0; i < products.length; i++) {
+                if (products[i] != null && products[i].getName() != null) {
+                    if (products[i].getName().toLowerCase().contains(q)) {
+                        return products[i];
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public OpResult deleteProduct(int skuId) {
         if (skuId <= 0) {
             return OpResult.err("Invalid SKU ID.");
