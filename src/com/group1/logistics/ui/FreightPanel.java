@@ -13,9 +13,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * Tab 3: Freight Logistics Hub (Module 3 — Custom Sorting Engine).
- * Demonstrates QuickSort (by Weight) and InsertionSort (by Priority).
- * Includes clickable column headers backed by custom sorters (zero TableRowSorter).
+ * Tab 3: Freight Logistics Hub.
+ * Clean, modern freight sorting panel.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class FreightPanel extends JPanel {
@@ -25,7 +24,7 @@ public class FreightPanel extends JPanel {
 
     private boolean ascending = true;
     private String currentSortField = "Weight (kg)";
-    private String currentAlgorithm = "QuickSort (Hoare Partition)";
+    private String currentAlgorithm = "QuickSort";
     private JLabel lblActiveSort;
     private JButton btnToggleOrder;
     private JTable tblFreight;
@@ -39,50 +38,24 @@ public class FreightPanel extends JPanel {
         setBackground(UiTheme.BG_WINDOW);
         setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        // Top 1-Line Plain-English Workflow Banner
-        add(UiTheme.createWorkflowBanner(
-                "Custom parcel sorting engine comparing QuickSort (Hoare partition) and InsertionSort (Stable).",
-                "Sorting Engine (Custom Sorters)"
-        ), BorderLayout.NORTH);
+        // Sorting Controls Panel
+        add(createSortingControlsSubPanel(), BorderLayout.NORTH);
 
-        // Center Container: Top Sorting Toolbar + Center Table
-        JPanel centerContainer = new JPanel(new BorderLayout(0, 10));
-        centerContainer.setBackground(UiTheme.BG_WINDOW);
-
-        centerContainer.add(createSortingControlsSubPanel(), BorderLayout.NORTH);
-        centerContainer.add(createTableSubPanel(), BorderLayout.CENTER);
-
-        add(centerContainer, BorderLayout.CENTER);
+        // Dispatched Packages Table Panel
+        add(createTableSubPanel(), BorderLayout.CENTER);
     }
 
     private JPanel createSortingControlsSubPanel() {
-        JPanel card = UiTheme.createCardPanel("Freight Cargo Sorting Controls (Strict Zero-TableRowSorter Engine)");
+        JPanel card = UiTheme.createCardPanel("Cargo Sorting");
         card.setLayout(new BorderLayout(0, 8));
 
         // Button Toolbar
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
         btnBar.setBackground(UiTheme.SURFACE);
 
-        JButton btnSortWeight = UiTheme.createStyledButton(
-                "Sort by Weight (QuickSort - Hoare)",
-                UiTheme.PRIMARY_BLUE,
-                Color.WHITE,
-                "Hoare partitioning with median-of-three pivot selection. O(n log n) average time complexity."
-        );
-
-        JButton btnSortPriority = UiTheme.createStyledButton(
-                "Sort by Priority (InsertionSort - Stable)",
-                UiTheme.PRIMARY_BLUE,
-                Color.WHITE,
-                "Stable in-place sorting that strictly preserves arrival sequence for equal priority parcels."
-        );
-
-        btnToggleOrder = UiTheme.createStyledButton(
-                "Order: Ascending ↑",
-                new Color(0x37, 0x41, 0x51),
-                Color.WHITE,
-                "Toggle between Ascending (↑) and Descending (↓) sort order"
-        );
+        JButton btnSortWeight = UiTheme.createPrimaryButton("Sort by Weight", "Sorts cargo by weight (QuickSort)");
+        JButton btnSortPriority = UiTheme.createPrimaryButton("Sort by Priority", "Sorts cargo by delivery priority (InsertionSort)");
+        btnToggleOrder = UiTheme.createSecondaryButton("Order: Ascending", "Toggles sort direction");
 
         btnBar.add(btnSortWeight);
         btnBar.add(btnSortPriority);
@@ -109,7 +82,7 @@ public class FreightPanel extends JPanel {
         // Listeners
         btnSortWeight.addActionListener(e -> {
             currentSortField = "Weight (kg)";
-            currentAlgorithm = "QuickSort (Hoare Partition)";
+            currentAlgorithm = "QuickSort";
             OpResult result = service.sortPackages(1, 1, ascending);
             updateActiveSortLabel();
             freightTableModel.fireTableDataChanged();
@@ -118,7 +91,7 @@ public class FreightPanel extends JPanel {
 
         btnSortPriority.addActionListener(e -> {
             currentSortField = "Delivery Priority";
-            currentAlgorithm = "InsertionSort (Stable)";
+            currentAlgorithm = "InsertionSort";
             OpResult result = service.sortPackages(2, 2, ascending);
             updateActiveSortLabel();
             freightTableModel.fireTableDataChanged();
@@ -127,8 +100,7 @@ public class FreightPanel extends JPanel {
 
         btnToggleOrder.addActionListener(e -> {
             ascending = !ascending;
-            btnToggleOrder.setText("Order: " + (ascending ? "Ascending ↑" : "Descending ↓"));
-            // Re-apply active sort
+            btnToggleOrder.setText("Order: " + (ascending ? "Ascending" : "Descending"));
             if (currentSortField.contains("Weight")) {
                 service.sortPackages(1, 1, ascending);
             } else if (currentSortField.contains("Priority")) {
@@ -140,14 +112,14 @@ public class FreightPanel extends JPanel {
             }
             updateActiveSortLabel();
             freightTableModel.fireTableDataChanged();
-            mainFrame.setFeedback(true, "Sort order flipped to " + (ascending ? "Ascending" : "Descending") + ".");
+            mainFrame.setFeedback(true, "Sorted in " + (ascending ? "Ascending" : "Descending") + " order.");
         });
 
         return card;
     }
 
     private JPanel createTableSubPanel() {
-        JPanel card = UiTheme.createCardPanel("Dispatched Cargo Packages (Stored in Primitive FreightPackageArray)");
+        JPanel card = UiTheme.createCardPanel("Dispatched Freight Packages");
         card.setLayout(new BorderLayout(0, 6));
 
         tblFreight = new JTable(freightTableModel);
@@ -155,11 +127,9 @@ public class FreightPanel extends JPanel {
         tblFreight.setDefaultRenderer(Object.class, UiTheme.createFreightCellRenderer());
         tblFreight.setFillsViewportHeight(true);
 
-        // Strict Compliance Safeguard: Disable Swing's built-in TableRowSorter (Trap 5)
         tblFreight.setAutoCreateRowSorter(false);
         tblFreight.getTableHeader().setReorderingAllowed(false);
 
-        // Set explicit preferred column widths
         TableColumnModel colModel = tblFreight.getColumnModel();
         colModel.getColumn(0).setPreferredWidth(100); // Package ID
         colModel.getColumn(1).setPreferredWidth(80);  // Order ID
@@ -168,7 +138,7 @@ public class FreightPanel extends JPanel {
         colModel.getColumn(4).setPreferredWidth(120); // Delivery Priority
         colModel.getColumn(5).setPreferredWidth(95);  // Dispatch Seq
 
-        // Attach MouseAdapter to table header so clicking columns runs our custom sorters!
+        // Clicking column header sorts dynamically
         tblFreight.getTableHeader().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -185,29 +155,24 @@ public class FreightPanel extends JPanel {
     }
 
     private void handleHeaderClick(int col) {
-        // Map columns to custom sorters:
-        // Col 0: Package ID -> QuickSort (Criteria 3)
-        // Col 2: Destination -> InsertionSort (Criteria 4)
-        // Col 3: Weight -> QuickSort (Criteria 1)
-        // Col 4: Priority -> InsertionSort (Criteria 2)
         if (col == 3) {
             currentSortField = "Weight (kg)";
-            currentAlgorithm = "QuickSort (Hoare Partition)";
+            currentAlgorithm = "QuickSort";
             OpResult result = service.sortPackages(1, 1, ascending);
             mainFrame.setFeedback(result);
         } else if (col == 4) {
             currentSortField = "Delivery Priority";
-            currentAlgorithm = "InsertionSort (Stable)";
+            currentAlgorithm = "InsertionSort";
             OpResult result = service.sortPackages(2, 2, ascending);
             mainFrame.setFeedback(result);
         } else if (col == 0) {
             currentSortField = "Package ID";
-            currentAlgorithm = "QuickSort (Criteria 3)";
+            currentAlgorithm = "QuickSort";
             OpResult result = service.sortPackages(1, 3, ascending);
             mainFrame.setFeedback(result);
         } else if (col == 2) {
             currentSortField = "Destination Hub";
-            currentAlgorithm = "InsertionSort (Criteria 4)";
+            currentAlgorithm = "InsertionSort";
             OpResult result = service.sortPackages(2, 4, ascending);
             mainFrame.setFeedback(result);
         }
@@ -216,12 +181,10 @@ public class FreightPanel extends JPanel {
     }
 
     private void updateActiveSortLabel() {
-        String arrow = ascending ? "↑" : "↓";
         String direction = ascending ? "Ascending" : "Descending";
         lblActiveSort.setText(String.format(
-                "<html><b>Active Sort:</b> %s &nbsp;&nbsp;|&nbsp;&nbsp; <b>Algorithm:</b> <font color='#1A73E8'>%s</font> &nbsp;&nbsp;|&nbsp;&nbsp; <b>Direction:</b> %s %s "
-                + "<span style='color: #6B7280; font-weight: normal; font-size: 11px;'>(Click column headers to sort dynamically)</span></html>",
-                currentSortField, currentAlgorithm, direction, arrow
+                "Active Sort: %s  |  Algorithm: %s  |  Direction: %s  (Tip: Click table column headers to sort dynamically)",
+                currentSortField, currentAlgorithm, direction
         ));
     }
 

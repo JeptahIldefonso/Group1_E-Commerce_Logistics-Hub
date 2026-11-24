@@ -11,7 +11,7 @@ import java.awt.*;
 
 /**
  * Main application frame for the E-Commerce Fulfillment & Logistics System.
- * Houses 3 operational tabs, a non-blocking inline feedback bar, and a live system status bar.
+ * Clean, modern layout with non-blocking feedback and status bar.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class MainFrame extends JFrame {
@@ -26,7 +26,7 @@ public class MainFrame extends JFrame {
     private final JLabel lblStatusBar;
 
     public MainFrame(FulfillmentService service) {
-        super("E-Commerce Fulfillment & Logistics Hub (Group 1 - BSIS DSA Final Project)");
+        super("E-Commerce Fulfillment & Logistics Hub (Group 1)");
         this.service = service;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -42,14 +42,14 @@ public class MainFrame extends JFrame {
         this.catalogPanel = new CatalogPanel(service, this);
         this.freightPanel = new FreightPanel(service, this);
 
-        // Tabbed Pane
+        // Tabbed Pane with concise, clear titles
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 12));
         tabbedPane.setBackground(UiTheme.BG_WINDOW);
 
-        tabbedPane.addTab("Orders & Restock Desk (Queue & Stack)", ordersRestockPanel);
-        tabbedPane.addTab("SKU Catalog Index (BST Engine)", catalogPanel);
-        tabbedPane.addTab("Freight Logistics Hub (Custom Sorters)", freightPanel);
+        tabbedPane.addTab("Orders & Restock", ordersRestockPanel);
+        tabbedPane.addTab("Product Catalog", catalogPanel);
+        tabbedPane.addTab("Freight Logistics", freightPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -57,7 +57,7 @@ public class MainFrame extends JFrame {
         JPanel bottomContainer = new JPanel(new BorderLayout(0, 0));
         bottomContainer.setBackground(UiTheme.SURFACE);
 
-        // 1. Non-blocking Inline Feedback Bar (Soft Green / Soft Red / Soft Blue)
+        // 1. Non-blocking Inline Feedback Bar (Clean text, zero broken unicode boxes)
         pnlFeedback = new JPanel(new BorderLayout(8, 0));
         pnlFeedback.setBackground(UiTheme.FEEDBACK_SUCCESS_BG);
         pnlFeedback.setBorder(new CompoundBorder(
@@ -65,7 +65,7 @@ public class MainFrame extends JFrame {
                 new EmptyBorder(6, 14, 6, 14)
         ));
 
-        lblFeedback = new JLabel("✓ System Ready — Initialized with 14 catalog SKUs, 5 queued orders, and 5 dispatched parcels.");
+        lblFeedback = new JLabel("[OK] System Ready — 14 products in catalog, 5 pending orders, 5 dispatched packages.");
         lblFeedback.setFont(UiTheme.FONT_BOLD);
         lblFeedback.setForeground(UiTheme.FEEDBACK_SUCCESS_TEXT);
         pnlFeedback.add(lblFeedback, BorderLayout.CENTER);
@@ -85,10 +85,10 @@ public class MainFrame extends JFrame {
         lblStatusBar.setForeground(UiTheme.TEXT_PRIMARY);
         pnlStatus.add(lblStatusBar, BorderLayout.WEST);
 
-        JLabel lblCopyright = new JLabel("BSIS 2nd Year DSA Final Lab · Group 1 (Standalone Pure Java 17)");
-        lblCopyright.setFont(UiTheme.FONT_HINT);
-        lblCopyright.setForeground(UiTheme.TEXT_MUTED);
-        pnlStatus.add(lblCopyright, BorderLayout.EAST);
+        JLabel lblFooter = new JLabel("Group 1 Logistics Hub · Java 17");
+        lblFooter.setFont(UiTheme.FONT_HINT);
+        lblFooter.setForeground(UiTheme.TEXT_MUTED);
+        pnlStatus.add(lblFooter, BorderLayout.EAST);
 
         bottomContainer.add(pnlStatus, BorderLayout.SOUTH);
 
@@ -112,18 +112,18 @@ public class MainFrame extends JFrame {
         if (success) {
             pnlFeedback.setBackground(UiTheme.FEEDBACK_SUCCESS_BG);
             lblFeedback.setForeground(UiTheme.FEEDBACK_SUCCESS_TEXT);
-            lblFeedback.setText("✓ " + message);
+            lblFeedback.setText("[OK] " + message);
         } else {
             pnlFeedback.setBackground(UiTheme.FEEDBACK_ERROR_BG);
             lblFeedback.setForeground(UiTheme.FEEDBACK_ERROR_TEXT);
-            lblFeedback.setText("✕ " + message);
+            lblFeedback.setText("[Notice] " + message);
         }
         pnlFeedback.revalidate();
         pnlFeedback.repaint();
     }
 
     /**
-     * Refreshes all 3 table models, dynamic SKU dropdowns, button states, and status bar counts.
+     * Refreshes all table models, dropdowns, button states, and status counts.
      */
     public void refreshAll() {
         ordersRestockPanel.refreshTables();
@@ -131,7 +131,7 @@ public class MainFrame extends JFrame {
         freightPanel.refreshTables();
 
         lblStatusBar.setText(String.format(
-                "Order Queue: %d/20   |   Restock Audit Stack: %d/20   |   Catalog: %d SKUs (Tree Height: %d)   |   Dispatched Freight Packages: %d",
+                "Queue: %d/20   |   Restock Stack: %d/20   |   Catalog: %d SKUs (Tree Height: %d)   |   Freight: %d Packages",
                 service.getOrderQueue().size(),
                 service.getRestockStack().size(),
                 service.getInventoryBst().size(),

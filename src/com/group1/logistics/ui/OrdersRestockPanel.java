@@ -12,13 +12,11 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 
 /**
- * Tab 1: Orders & Restock Desk (Circular Queue FIFO & Array Stack LIFO).
- * Modern 62/38 split layout, dynamic SKU dropdowns, visual FIFO/LIFO cues, and responsive button states.
- * 100% pure standard Swing; zero Java Collections.
+ * Tab 1: Orders & Restock Desk.
+ * Intuitive, clean warehouse operations panel.
+ * Pure standard Java Swing; zero Java Collections.
  */
 public class OrdersRestockPanel extends JPanel {
     private final FulfillmentService service;
@@ -47,9 +45,6 @@ public class OrdersRestockPanel extends JPanel {
     private JLabel lblStackTopSummary;
     private JTable tblRestock;
 
-    /**
-     * Helper representation for JComboBox items without importing java.util.Vector or Collections.
-     */
     public static class ProductComboItem {
         private final int skuId;
         private final String displayText;
@@ -75,46 +70,33 @@ public class OrdersRestockPanel extends JPanel {
         this.queueTableModel = new QueueTableModel(service.getOrderQueue());
         this.restockTableModel = new RestockTableModel(service.getRestockStack());
 
-        setLayout(new BorderLayout(0, 10));
+        setLayout(new GridBagLayout());
         setBackground(UiTheme.BG_WINDOW);
         setBorder(new EmptyBorder(10, 12, 10, 12));
-
-        // Top 1-Line Plain-English Workflow Banner
-        add(UiTheme.createWorkflowBanner(
-                "Manage customer intake queue (FIFO) and audit inventory restocks with safe rollback (LIFO).",
-                "Linear ADTs (Circular Queue & Array Stack)"
-        ), BorderLayout.NORTH);
-
-        // Center Proportional Split (~62% Left Order Queue / ~38% Right Restock Stack)
-        JPanel centerSplit = new JPanel(new GridBagLayout());
-        centerSplit.setBackground(UiTheme.BG_WINDOW);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weighty = 1.0;
 
-        // Left Subpanel: Order Queue (weightx = 0.62)
+        // Left Subpanel: Orders (~62% width)
         gbc.gridx = 0;
         gbc.weightx = 0.62;
         gbc.insets = new Insets(0, 0, 0, 10);
-        centerSplit.add(createOrderQueueSubPanel(), gbc);
+        add(createOrderQueueSubPanel(), gbc);
 
-        // Right Subpanel: Restock Stack (weightx = 0.38)
+        // Right Subpanel: Restock (~38% width)
         gbc.gridx = 1;
         gbc.weightx = 0.38;
         gbc.insets = new Insets(0, 0, 0, 0);
-        centerSplit.add(createRestockStackSubPanel(), gbc);
+        add(createRestockStackSubPanel(), gbc);
 
-        add(centerSplit, BorderLayout.CENTER);
-
-        // Populate dynamic SKU combos from InventoryBST
         refreshSkuDropdowns();
         updateCuesAndButtonStates();
     }
 
     private JPanel createOrderQueueSubPanel() {
-        JPanel card = UiTheme.createCardPanel("Customer Order Intake & Dispatch Line (Circular Queue — FIFO)");
+        JPanel card = UiTheme.createCardPanel("Customer Orders");
         card.setLayout(new BorderLayout(0, 8));
 
         // Form Container
@@ -129,14 +111,14 @@ public class OrdersRestockPanel extends JPanel {
         g.insets = new Insets(4, 4, 4, 4);
         g.fill = GridBagConstraints.HORIZONTAL;
 
-        txtCustomer = new JTextField(15);
+        txtCustomer = new JTextField(14);
         txtCustomer.setFont(UiTheme.FONT_REGULAR);
         txtCustomer.addActionListener(e -> handleEnqueue());
 
         cmbOrderSku = new JComboBox<>();
         cmbOrderSku.setFont(UiTheme.FONT_REGULAR);
 
-        txtQuantity = new JTextField("1", 5);
+        txtQuantity = new JTextField("1", 4);
         txtQuantity.setFont(UiTheme.FONT_REGULAR);
         txtQuantity.addActionListener(e -> handleEnqueue());
 
@@ -153,33 +135,28 @@ public class OrdersRestockPanel extends JPanel {
         cmbPriority = new JComboBox<>(priorities);
         cmbPriority.setFont(UiTheme.FONT_REGULAR);
 
-        btnQueue = UiTheme.createStyledButton(
-                "Queue Order (Enqueue)",
-                UiTheme.PRIMARY_BLUE,
-                Color.WHITE,
-                "Adds customer order to the circular queue rear in O(1) time"
-        );
+        btnQueue = UiTheme.createPrimaryButton("Place Order", "Enqueues order in FIFO sequence");
         btnQueue.addActionListener(e -> handleEnqueue());
 
         // Row 0: Customer Name & Quantity
         g.gridy = 0;
         g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Customer Name:"), g);
         g.gridx = 1; g.weightx = 1.0; form.add(txtCustomer, g);
-        g.gridx = 2; g.weightx = 0.0; form.add(new JLabel("Quantity:"), g);
-        g.gridx = 3; g.weightx = 0.3; form.add(txtQuantity, g);
+        g.gridx = 2; g.weightx = 0.0; form.add(new JLabel("Qty:"), g);
+        g.gridx = 3; g.weightx = 0.25; form.add(txtQuantity, g);
 
-        // Row 1: Select SKU from dynamic tree
+        // Row 1: Product selection
         g.gridy = 1;
-        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Select SKU:"), g);
+        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Product:"), g);
         g.gridx = 1; g.gridwidth = 3; g.weightx = 1.0; form.add(cmbOrderSku, g);
-        g.gridwidth = 1; // reset
+        g.gridwidth = 1;
 
         // Row 2: Destination & Priority
         g.gridy = 2;
-        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Destination Hub:"), g);
+        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Destination:"), g);
         g.gridx = 1; g.weightx = 1.0; form.add(cmbDestination, g);
         g.gridx = 2; g.weightx = 0.0; form.add(new JLabel("Priority:"), g);
-        g.gridx = 3; g.weightx = 0.3; form.add(cmbPriority, g);
+        g.gridx = 3; g.weightx = 0.25; form.add(cmbPriority, g);
 
         // Row 3: Enqueue Button
         g.gridy = 3;
@@ -195,7 +172,6 @@ public class OrdersRestockPanel extends JPanel {
         tblQueue.setDefaultRenderer(Object.class, UiTheme.createQueueCellRenderer());
         tblQueue.setFillsViewportHeight(true);
 
-        // Explicit column widths to completely eliminate "..." truncation
         TableColumnModel colModel = tblQueue.getColumnModel();
         colModel.getColumn(0).setPreferredWidth(35);  // #
         colModel.getColumn(1).setPreferredWidth(70);  // Order ID
@@ -213,8 +189,7 @@ public class OrdersRestockPanel extends JPanel {
         JPanel southArea = new JPanel(new BorderLayout(0, 6));
         southArea.setBackground(UiTheme.SURFACE);
 
-        // Front-of-Queue Visual Summary Card
-        lblQueueFrontSummary = new JLabel(" Front of Queue: Loading...");
+        lblQueueFrontSummary = new JLabel(" Next in Line: Loading...");
         lblQueueFrontSummary.setFont(UiTheme.FONT_SUBTITLE);
         lblQueueFrontSummary.setOpaque(true);
         lblQueueFrontSummary.setBackground(UiTheme.HIGHLIGHT_QUEUE_ROW0);
@@ -225,22 +200,11 @@ public class OrdersRestockPanel extends JPanel {
         ));
         southArea.add(lblQueueFrontSummary, BorderLayout.NORTH);
 
-        // Action Buttons Bar
         JPanel btnBar = new JPanel(new GridLayout(1, 2, 8, 0));
         btnBar.setBackground(UiTheme.SURFACE);
 
-        btnDispatch = UiTheme.createStyledButton(
-                "Dispatch Next Order (FIFO)",
-                UiTheme.PRIMARY_BLUE,
-                Color.WHITE,
-                "Dispatches the front order in the circular queue (FIFO) and prompts cargo weight (BR-08)"
-        );
-        btnReject = UiTheme.createStyledButton(
-                "Reject Front Order",
-                UiTheme.DANGER_RED,
-                Color.WHITE,
-                "Removes the front order from the circular queue without deducting stock"
-        );
+        btnDispatch = UiTheme.createPrimaryButton("Dispatch Next Order", "Dispatches front order to freight packing");
+        btnReject = UiTheme.createDangerButton("Reject Front Order", "Removes front order from queue");
 
         btnDispatch.addActionListener(e -> handleDispatch());
         btnReject.addActionListener(e -> handleReject());
@@ -254,10 +218,9 @@ public class OrdersRestockPanel extends JPanel {
     }
 
     private JPanel createRestockStackSubPanel() {
-        JPanel card = UiTheme.createCardPanel("Inventory Restock Audit & Undo (Stack — LIFO)");
+        JPanel card = UiTheme.createCardPanel("Inventory Restock");
         card.setLayout(new BorderLayout(0, 8));
 
-        // Form Container
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(UiTheme.SURFACE);
         form.setBorder(new CompoundBorder(
@@ -276,17 +239,12 @@ public class OrdersRestockPanel extends JPanel {
         txtRestockQty.setFont(UiTheme.FONT_REGULAR);
         txtRestockQty.addActionListener(e -> handleRestock());
 
-        btnRestock = UiTheme.createStyledButton(
-                "Apply Restock (Push)",
-                UiTheme.POSITIVE_GREEN,
-                Color.WHITE,
-                "Increments inventory stock and pushes an audit entry onto the LIFO stack"
-        );
+        btnRestock = UiTheme.createSuccessButton("Add Stock", "Increments product stock and records restock");
         btnRestock.addActionListener(e -> handleRestock());
 
-        // Row 0: Select SKU to restock
+        // Row 0: Select Product
         g.gridy = 0;
-        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("SKU:"), g);
+        g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Product:"), g);
         g.gridx = 1; g.weightx = 1.0; form.add(cmbRestockSku, g);
 
         // Row 1: Quantity to Add
@@ -294,7 +252,7 @@ public class OrdersRestockPanel extends JPanel {
         g.gridx = 0; g.weightx = 0.0; form.add(new JLabel("Qty to Add:"), g);
         g.gridx = 1; g.weightx = 1.0; form.add(txtRestockQty, g);
 
-        // Row 2: Push Button
+        // Row 2: Add Stock Button
         g.gridy = 2;
         g.gridx = 0; g.gridwidth = 2; g.weightx = 1.0;
         g.insets = new Insets(6, 4, 2, 4);
@@ -309,10 +267,10 @@ public class OrdersRestockPanel extends JPanel {
         tblRestock.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblRestock.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(85); // Action ID
-        colModel.getColumn(1).setPreferredWidth(80); // SKU ID
-        colModel.getColumn(2).setPreferredWidth(95); // Units Added
-        colModel.getColumn(3).setPreferredWidth(80); // Sequence No
+        colModel.getColumn(0).setPreferredWidth(85);
+        colModel.getColumn(1).setPreferredWidth(80);
+        colModel.getColumn(2).setPreferredWidth(95);
+        colModel.getColumn(3).setPreferredWidth(80);
 
         JScrollPane scrollPane = new JScrollPane(tblRestock);
         scrollPane.setBorder(new LineBorder(UiTheme.BORDER, 1));
@@ -322,8 +280,7 @@ public class OrdersRestockPanel extends JPanel {
         JPanel southArea = new JPanel(new BorderLayout(0, 6));
         southArea.setBackground(UiTheme.SURFACE);
 
-        // Top-of-Stack Visual Summary Card
-        lblStackTopSummary = new JLabel(" Top of Stack: Loading...");
+        lblStackTopSummary = new JLabel(" Last Restock: Loading...");
         lblStackTopSummary.setFont(UiTheme.FONT_SUBTITLE);
         lblStackTopSummary.setOpaque(true);
         lblStackTopSummary.setBackground(UiTheme.HIGHLIGHT_STACK_ROW0);
@@ -334,12 +291,7 @@ public class OrdersRestockPanel extends JPanel {
         ));
         southArea.add(lblStackTopSummary, BorderLayout.NORTH);
 
-        btnUndo = UiTheme.createStyledButton(
-                "Undo Last Restock (LIFO Rollback)",
-                UiTheme.WARNING_AMBER,
-                Color.WHITE,
-                "Pops top restock action from the LIFO stack and safely reverts inventory stock"
-        );
+        btnUndo = UiTheme.createWarningButton("Undo Last Restock", "Rolls back the most recent restock action");
         btnUndo.addActionListener(e -> handleUndo());
         southArea.add(btnUndo, BorderLayout.SOUTH);
 
@@ -347,10 +299,6 @@ public class OrdersRestockPanel extends JPanel {
         return card;
     }
 
-    /**
-     * Refreshes the dynamic SKU dropdowns directly from the InventoryBST in-order traversal.
-     * Complies with zero collections rule.
-     */
     public void refreshSkuDropdowns() {
         ProductComboItem prevOrderSelected = (ProductComboItem) cmbOrderSku.getSelectedItem();
         ProductComboItem prevRestockSelected = (ProductComboItem) cmbRestockSku.getSelectedItem();
@@ -369,7 +317,6 @@ public class OrdersRestockPanel extends JPanel {
                 cmbOrderSku.addItem(item);
                 cmbRestockSku.addItem(item);
 
-                // Restore previous selection if possible
                 if (prevOrderSelected != null && prevOrderSelected.getSkuId() == p.getSkuId()) {
                     cmbOrderSku.setSelectedItem(item);
                 }
@@ -380,36 +327,31 @@ public class OrdersRestockPanel extends JPanel {
         }
     }
 
-    /**
-     * Updates the summary cues (Front of Queue & Top of Stack) and enables/disables action buttons.
-     */
     public void updateCuesAndButtonStates() {
-        // Order Queue Cues
         boolean queueEmpty = service.getOrderQueue().isEmpty();
         btnDispatch.setEnabled(!queueEmpty);
         btnReject.setEnabled(!queueEmpty);
 
         if (queueEmpty) {
-            lblQueueFrontSummary.setText(" (i) Order Queue is empty — waiting for incoming customer orders.");
+            lblQueueFrontSummary.setText(" No pending orders in queue.");
             lblQueueFrontSummary.setForeground(UiTheme.TEXT_MUTED);
         } else {
             Order front = service.getOrderQueue().peek();
-            lblQueueFrontSummary.setText(" Front of Queue: #" + front.getOrderId() + " · " + front.getCustomerName() +
-                    " · SKU #" + front.getSkuId() + " (Qty: " + front.getQuantity() + ") → " + front.getDestination());
+            lblQueueFrontSummary.setText(" Next in Line: Order #" + front.getOrderId() + " (" + front.getCustomerName() +
+                    ") · " + front.getQuantity() + "x SKU #" + front.getSkuId() + " -> " + front.getDestination());
             lblQueueFrontSummary.setForeground(UiTheme.TEXT_PRIMARY);
         }
 
-        // Restock Stack Cues
         boolean stackEmpty = service.getRestockStack().isEmpty();
         btnUndo.setEnabled(!stackEmpty);
 
         if (stackEmpty) {
-            lblStackTopSummary.setText(" (i) Restock stack is empty — no actions to undo.");
+            lblStackTopSummary.setText(" No restock actions to undo.");
             lblStackTopSummary.setForeground(UiTheme.TEXT_MUTED);
         } else {
             RestockAction top = service.getRestockStack().peek();
-            lblStackTopSummary.setText(" Top of Stack (Will Undo): Action #" + top.getActionId() +
-                    " · SKU #" + top.getSkuId() + " (+" + top.getQuantityAdded() + " units) · Seq #" + top.getSequenceNo());
+            lblStackTopSummary.setText(" Last Restock: Action #" + top.getActionId() +
+                    " · Added +" + top.getQuantityAdded() + " units to SKU #" + top.getSkuId());
             lblStackTopSummary.setForeground(UiTheme.TEXT_PRIMARY);
         }
     }
@@ -422,8 +364,7 @@ public class OrdersRestockPanel extends JPanel {
         int priority = cmbPriority.getSelectedIndex() + 1;
 
         if (customer.isEmpty() || selectedProduct == null || qtyStr.isEmpty()) {
-            mainFrame.setFeedback(false, "Validation Error: Please enter customer name and valid quantity.");
-            JOptionPane.showMessageDialog(this, "Please enter customer name and quantity.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            mainFrame.setFeedback(false, "Please enter customer name and quantity.");
             return;
         }
 
@@ -441,29 +382,26 @@ public class OrdersRestockPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, result.getMessage(), "Order Rejected", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Input Error: Quantity must be a valid positive integer.");
-            JOptionPane.showMessageDialog(this, "Quantity must be a valid positive integer.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            mainFrame.setFeedback(false, "Quantity must be a valid positive integer.");
         }
     }
 
     private void handleDispatch() {
         if (service.getOrderQueue().isEmpty()) {
-            mainFrame.setFeedback(false, "Dispatch Notice: Order Queue is empty. No orders waiting.");
+            mainFrame.setFeedback(false, "No orders waiting in queue.");
             return;
         }
 
         Order front = service.getOrderQueue().peek();
 
-        // Prompt weight dialog (BR-08)
         String input = JOptionPane.showInputDialog(this,
                 "Dispatching Order #" + front.getOrderId() + " (" + front.getCustomerName() + ")\n" +
-                "Item: SKU #" + front.getSkuId() + " (Qty: " + front.getQuantity() + ")\n" +
-                "Destination: " + front.getDestination() + " (Priority " + front.getDeliveryPriority() + ")\n\n" +
-                "Enter parcel cargo packing weight in kg (0.01 - 1000.00):",
-                "Parcel Packing Weight (BR-08)", JOptionPane.QUESTION_MESSAGE);
+                "Item: SKU #" + front.getSkuId() + " (Qty: " + front.getQuantity() + ")\n\n" +
+                "Enter parcel weight in kg (0.01 - 1000.00):",
+                "Parcel Weight", JOptionPane.QUESTION_MESSAGE);
 
         if (input == null) {
-            return; // Operator cancelled
+            return;
         }
 
         try {
@@ -476,14 +414,13 @@ public class OrdersRestockPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, result.getMessage(), "Dispatch Blocked", JOptionPane.WARNING_MESSAGE);
             }
         } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Invalid Weight: Cargo weight must be a valid number (e.g. 2.45).");
-            JOptionPane.showMessageDialog(this, "Weight must be a valid number (e.g. 2.45).", "Invalid Weight", JOptionPane.ERROR_MESSAGE);
+            mainFrame.setFeedback(false, "Weight must be a valid number (e.g. 2.45).");
         }
     }
 
     private void handleReject() {
         if (service.getOrderQueue().isEmpty()) {
-            mainFrame.setFeedback(false, "Order Queue is already empty.");
+            mainFrame.setFeedback(false, "Order queue is empty.");
             return;
         }
         OpResult result = service.rejectFrontOrder();
@@ -496,7 +433,7 @@ public class OrdersRestockPanel extends JPanel {
         String qtyStr = txtRestockQty.getText().trim();
 
         if (selectedProduct == null || qtyStr.isEmpty()) {
-            mainFrame.setFeedback(false, "Validation Error: Please select SKU and enter quantity to add.");
+            mainFrame.setFeedback(false, "Please select product and enter quantity.");
             return;
         }
 
@@ -513,14 +450,13 @@ public class OrdersRestockPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, result.getMessage(), "Restock Blocked", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Input Error: Quantity to add must be a positive integer.");
-            JOptionPane.showMessageDialog(this, "Quantity to add must be a valid integer.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            mainFrame.setFeedback(false, "Quantity must be a valid integer.");
         }
     }
 
     private void handleUndo() {
         if (service.getRestockStack().isEmpty()) {
-            mainFrame.setFeedback(false, "Notice: Restock stack is empty.");
+            mainFrame.setFeedback(false, "No restock actions to undo.");
             return;
         }
         OpResult result = service.undoRestock();
