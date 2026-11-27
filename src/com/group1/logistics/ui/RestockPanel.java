@@ -114,7 +114,7 @@ public class RestockPanel extends JPanel {
                 "Roll back the most recent restock and subtract stock");
         btnUndo.addActionListener(e -> handleUndo());
 
-        btnAddStock = UiTheme.createSuccessButton("+ Add Stock",
+        btnAddStock = UiTheme.createSuccessButton("Add Stock",
                 new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14),
                 "Open modal to replenish stock for a product");
         btnAddStock.addActionListener(e -> handleOpenAddStockDialog());
@@ -139,7 +139,7 @@ public class RestockPanel extends JPanel {
         colModel.getColumn(3).setPreferredWidth(120); // Order of Entry
 
         JScrollPane sp = UiTheme.createModernScrollPane(tblRestock);
-        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        sp.setBorder(new LineBorder(UiTheme.BORDER_CARD, 1));
         return sp;
     }
 

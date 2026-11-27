@@ -20,6 +20,18 @@ public class PlaceOrderDialog extends JDialog {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
 
+    private static final String[] DESTINATIONS = {
+            "Manila Central Hub",
+            "Quezon City Hub",
+            "Makati Logistics Hub"
+    };
+    private static final String[] DELIVERY_SPEEDS = {
+            "Express (fastest)",
+            "Standard",
+            "Economy (slowest)"
+    };
+    private static final int[] DELIVERY_SPEED_PRIORITIES = {1, 3, 4};
+
     private JTextField txtCustomer;
     private JComboBox<OrdersPanel.ProductComboItem> cmbProduct;
     private JTextField txtQuantity;
@@ -111,16 +123,9 @@ public class PlaceOrderDialog extends JDialog {
         cmbProduct = new JComboBox<>();
         txtQuantity = new JTextField("1");
 
-        String[] destinations = {
-                "Manila Central Hub", "Quezon City Hub", "Makati Logistics Hub",
-                "Pasig Cargo Depot", "Taguig Freight Terminal"
-        };
-        cmbDestination = new JComboBox<>(destinations);
-
-        String[] priorities = {
-                "Express (fastest)", "Priority", "Standard", "Economy (slowest)", "Bulk Saver"
-        };
-        cmbPriority = new JComboBox<>(priorities);
+        cmbDestination = new JComboBox<>(DESTINATIONS);
+        cmbPriority = new JComboBox<>(DELIVERY_SPEEDS);
+        cmbPriority.setSelectedIndex(1); // Default to Standard
 
         UiTheme.installFocusRing(txtCustomer);
         UiTheme.installFocusRing(txtQuantity);
@@ -211,7 +216,8 @@ public class PlaceOrderDialog extends JDialog {
         if (products != null) {
             for (int i = 0; i < products.length; i++) {
                 Product p = products[i];
-                cmbProduct.addItem(new OrdersPanel.ProductComboItem(p.getSkuId(), p.getName(), p.getStockQty()));
+                int available = service.getAvailableStock(p.getSkuId());
+                cmbProduct.addItem(new OrdersPanel.ProductComboItem(p.getSkuId(), p.getName(), available));
             }
         }
     }
@@ -221,7 +227,10 @@ public class PlaceOrderDialog extends JDialog {
         OrdersPanel.ProductComboItem selectedProduct = (OrdersPanel.ProductComboItem) cmbProduct.getSelectedItem();
         String qtyStr = txtQuantity.getText().trim();
         String destination = (String) cmbDestination.getSelectedItem();
-        int priority = cmbPriority.getSelectedIndex() + 1;
+        int speedIdx = cmbPriority.getSelectedIndex();
+        int priority = (speedIdx >= 0 && speedIdx < DELIVERY_SPEED_PRIORITIES.length)
+                ? DELIVERY_SPEED_PRIORITIES[speedIdx]
+                : 3;
 
         if (customer.isEmpty()) {
             lblError.setText("Please enter the customer's name.");
@@ -257,8 +266,12 @@ public class PlaceOrderDialog extends JDialog {
             return;
         }
 
-        if (quantity > selectedProduct.getStock() && selectedProduct.getStock() > 0) {
-            lblError.setText("Only " + selectedProduct.getStock() + " units available in stock.");
+        if (selectedProduct.getStock() <= 0) {
+            lblError.setText(selectedProduct.getName() + " is out of stock (all units are reserved or depleted).");
+            return;
+        }
+        if (quantity > selectedProduct.getStock()) {
+            lblError.setText("Only " + selectedProduct.getStock() + " unreserved units available in stock.");
             return;
         }
 

@@ -8,7 +8,8 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.border.MatteBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
@@ -39,11 +40,12 @@ public class CatalogPanel extends JPanel {
 
     private JTable tblCatalog;
     private Product selectedProduct = null;
+    private Timer searchDebounceTimer;
 
     public CatalogPanel(FulfillmentService service, MainFrame mainFrame) {
         this.service = service;
         this.mainFrame = mainFrame;
-        this.catalogTableModel = new CatalogTableModel(service.getInventoryBst());
+        this.catalogTableModel = new CatalogTableModel(service.getInventoryBst(), service);
 
         setLayout(new BorderLayout(0, 14));
         setBackground(UiTheme.BG_WINDOW);
@@ -140,11 +142,45 @@ public class CatalogPanel extends JPanel {
         JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightBox.setOpaque(false);
 
-        txtSearch = new JTextField(18);
+        txtSearch = new JTextField(14);
         txtSearch.setFont(UiTheme.FONT_REGULAR);
-        txtSearch.setToolTipText("Search products by code or name (press Enter)");
+        txtSearch.setToolTipText("Search products by code or name (instant live highlight or press Enter)");
         UiTheme.installFocusRing(txtSearch);
-        txtSearch.addActionListener(e -> handleSearch());
+
+        // Debounced live search (250ms after typing stops; instant keystroke response)
+        searchDebounceTimer = new Timer(250, e -> {
+            String q = txtSearch.getText().trim();
+            if (!q.isEmpty()) {
+                performSearch(q, false);
+            }
+        });
+        searchDebounceTimer.setRepeats(false);
+
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                searchDebounceTimer.restart();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                if (txtSearch.getText().trim().isEmpty()) {
+                    searchDebounceTimer.stop();
+                } else {
+                    searchDebounceTimer.restart();
+                }
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                searchDebounceTimer.restart();
+            }
+        });
+
+        txtSearch.addActionListener(e -> {
+            searchDebounceTimer.stop();
+            handleSearch();
+        });
         txtSearch.registerKeyboardAction(
                 e -> clearSearch(),
                 KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
@@ -152,9 +188,15 @@ public class CatalogPanel extends JPanel {
         );
 
         JButton btnSearch = UiTheme.createSecondaryButton("Search", new UiTheme.VectorIcon(UiTheme.IconType.SEARCH, 13), "Search products");
-        btnSearch.addActionListener(e -> handleSearch());
+        btnSearch.addActionListener(e -> {
+            searchDebounceTimer.stop();
+            handleSearch();
+        });
 
-        btnAddProduct = UiTheme.createPrimaryButton("+ Add Product", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 13), "Open modal to add a new product");
+        JButton btnRefresh = UiTheme.createSecondaryButton("Refresh", new UiTheme.VectorIcon(UiTheme.IconType.REFRESH, 13), "Refresh live stock levels from inventory and queued orders");
+        btnRefresh.addActionListener(e -> handleRefresh());
+
+        btnAddProduct = UiTheme.createPrimaryButton("Add Product", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 13), "Open modal to add a new product");
         btnAddProduct.addActionListener(e -> handleOpenAddDialog());
 
         btnDeleteProduct = UiTheme.createOutlineDangerButton("Delete", new UiTheme.VectorIcon(UiTheme.IconType.DELETE, 13), "Delete the selected product");
@@ -163,6 +205,7 @@ public class CatalogPanel extends JPanel {
 
         rightBox.add(txtSearch);
         rightBox.add(btnSearch);
+        rightBox.add(btnRefresh);
         rightBox.add(btnAddProduct);
         rightBox.add(btnDeleteProduct);
 
@@ -186,6 +229,8 @@ public class CatalogPanel extends JPanel {
     private JScrollPane createTable() {
         tblCatalog = new JTable(catalogTableModel);
         UiTheme.configureTable(tblCatalog);
+        tblCatalog.setDefaultRenderer(Object.class, UiTheme.createCatalogCellRenderer());
+        tblCatalog.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblCatalog.getColumnModel();
         colModel.getColumn(0).setPreferredWidth(95);  // PROD CODE
@@ -210,7 +255,7 @@ public class CatalogPanel extends JPanel {
         });
 
         JScrollPane sp = UiTheme.createModernScrollPane(tblCatalog);
-        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        sp.setBorder(new LineBorder(UiTheme.BORDER_CARD, 1));
         return sp;
     }
 
@@ -240,12 +285,26 @@ public class CatalogPanel extends JPanel {
     private void selectProduct(Product p) {
         this.selectedProduct = p;
         updateDeleteButtonState();
+        int row = catalogTableModel.findRowBySkuId(p.getSkuId());
+        int avail = row >= 0 ? catalogTableModel.getAvailableStockAt(row) : service.getAvailableStock(p.getSkuId());
+        int reserved = row >= 0 ? catalogTableModel.getReservedStockAt(row) : service.getReservedQtyInQueue(p.getSkuId());
+        String stockNote = reserved > 0
+                ? avail + " available (" + reserved + " queued to ship)"
+                : avail + " units in stock";
         lblTableSummary.setText("Selected: Code #" + p.getSkuId() + " (" + p.getName() + ") • ₱"
-                + String.format("%,.2f", p.getPrice()) + " • " + p.getStockQty() + " units in stock.");
+                + String.format("%,.2f", p.getPrice()) + " • " + stockNote + ".");
     }
 
     private void updateDeleteButtonState() {
         btnDeleteProduct.setEnabled(selectedProduct != null);
+    }
+
+    @Override
+    public void removeNotify() {
+        if (searchDebounceTimer != null) {
+            searchDebounceTimer.stop();
+        }
+        super.removeNotify();
     }
 
     private void handleSearch() {
@@ -254,32 +313,40 @@ public class CatalogPanel extends JPanel {
             mainFrame.setFeedback(false, "Please type a product code or product name to search.");
             return;
         }
+        performSearch(query, true);
+    }
 
+    private void performSearch(String query, boolean explicitAction) {
+        int matchedRow = -1;
         Product product = null;
+
+        // 1. Try O(log n) numeric SKU lookup first via BST + binary row search
         try {
             int skuId = Integer.parseInt(query);
             product = service.findProduct(skuId);
+            if (product != null) {
+                matchedRow = catalogTableModel.findRowBySkuId(skuId);
+            }
         } catch (NumberFormatException ignored) {
-            // Search by name
+            // Fall through to cached name lookup
         }
 
+        // 2. Zero-allocation search against cached lowercased product names
         if (product == null) {
-            product = service.findProductByName(query);
+            matchedRow = catalogTableModel.findRowByNameQuery(query.toLowerCase());
+            if (matchedRow >= 0) {
+                product = catalogTableModel.getProductAt(matchedRow);
+            }
         }
 
         if (product != null) {
             selectProduct(product);
             mainFrame.setFeedback(true, "Found " + product.getName() + " (Code #" + product.getSkuId() + ").");
-
-            for (int i = 0; i < tblCatalog.getRowCount(); i++) {
-                Product p = catalogTableModel.getProductAt(i);
-                if (p != null && p.getSkuId() == product.getSkuId()) {
-                    tblCatalog.setRowSelectionInterval(i, i);
-                    tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(i, 0, true));
-                    break;
-                }
+            if (matchedRow >= 0 && matchedRow < tblCatalog.getRowCount()) {
+                tblCatalog.setRowSelectionInterval(matchedRow, matchedRow);
+                tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(matchedRow, 0, true));
             }
-        } else {
+        } else if (explicitAction) {
             selectedProduct = null;
             updateDeleteButtonState();
             mainFrame.setFeedback(false, "No product found matching '" + query + "'.");
@@ -288,6 +355,9 @@ public class CatalogPanel extends JPanel {
     }
 
     private void clearSearch() {
+        if (searchDebounceTimer != null) {
+            searchDebounceTimer.stop();
+        }
         txtSearch.setText("");
         selectedProduct = null;
         updateDeleteButtonState();
@@ -323,20 +393,9 @@ public class CatalogPanel extends JPanel {
     }
 
     private void updateFilterPills() {
-        Product[] products = service.getInventoryBst().inOrder();
-        int total = (products != null) ? products.length : 0;
-        int healthy = 0;
-        int attention = 0;
-
-        if (products != null) {
-            for (int i = 0; i < products.length; i++) {
-                if (products[i].getStockQty() > 20) {
-                    healthy++;
-                } else {
-                    attention++;
-                }
-            }
-        }
+        int total = catalogTableModel.getTotalCount();
+        int healthy = catalogTableModel.getHealthyCount();
+        int attention = catalogTableModel.getAttentionCount();
 
         if (lblPillAll != null) {
             lblPillAll.setText("All (" + total + ")");
@@ -352,8 +411,26 @@ public class CatalogPanel extends JPanel {
         }
     }
 
+    private void handleRefresh() {
+        mainFrame.refreshAll();
+        mainFrame.setFeedback(true, "Product stock levels refreshed.");
+    }
+
     public void refreshTables() {
         catalogTableModel.refresh();
+        if (selectedProduct != null) {
+            Product updated = service.findProduct(selectedProduct.getSkuId());
+            if (updated != null) {
+                selectProduct(updated);
+                int row = catalogTableModel.findRowBySkuId(updated.getSkuId());
+                if (row >= 0 && row < tblCatalog.getRowCount()) {
+                    tblCatalog.setRowSelectionInterval(row, row);
+                }
+            } else {
+                selectedProduct = null;
+                updateDeleteButtonState();
+            }
+        }
         updateFilterPills();
         if (lblTreeHeightBadge != null && technicalDetails) {
             lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " | Size: " + service.getInventoryBst().size() + " ");

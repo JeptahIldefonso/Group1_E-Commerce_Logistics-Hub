@@ -37,8 +37,9 @@ public class SidebarPanel extends JPanel {
             this.onClick = onClick;
 
             setOpaque(false);
-            setPreferredSize(new Dimension(200, 40));
-            setMaximumSize(new Dimension(200, 40));
+            setPreferredSize(new Dimension(220, 40));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            setAlignmentX(Component.LEFT_ALIGNMENT);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             addMouseListener(new MouseAdapter() {
@@ -94,6 +95,8 @@ public class SidebarPanel extends JPanel {
             }
 
             // Draw Icon
+            Color itemFg = active ? UiTheme.SIDEBAR_TEXT_ACTIVE : UiTheme.SIDEBAR_TEXT;
+            setForeground(itemFg);
             int iconX = 22;
             int iconY = (h - (icon != null ? icon.getIconHeight() : 0)) / 2;
             if (icon != null) {
@@ -102,10 +105,10 @@ public class SidebarPanel extends JPanel {
 
             // Draw Title Text
             g2.setFont(active ? UiTheme.FONT_SIDEBAR_ITEM_ACTIVE : UiTheme.FONT_SIDEBAR_ITEM);
-            g2.setColor(active ? UiTheme.SIDEBAR_TEXT_ACTIVE : UiTheme.SIDEBAR_TEXT);
+            g2.setColor(itemFg);
             FontMetrics fm = g2.getFontMetrics();
             int textX = iconX + (icon != null ? icon.getIconWidth() + 10 : 0);
-            int textY = (h + fm.getAscent() - fm.getDescent()) / 2;
+            int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
             g2.drawString(title, textX, textY);
 
             // Draw Live Count Badge Pill (on the right)
@@ -113,21 +116,21 @@ public class SidebarPanel extends JPanel {
             g2.setFont(UiTheme.FONT_BADGE);
             FontMetrics bfm = g2.getFontMetrics();
             int bTextW = bfm.stringWidth(badgeText);
-            int badgeW = Math.max(20, bTextW + 10);
-            int badgeH = 18;
-            int badgeX = w - 18 - badgeW;
+            int badgeW = Math.max(22, bTextW + 12);
+            int badgeH = 19;
+            int badgeX = w - 16 - badgeW;
             int badgeY = (h - badgeH) / 2;
 
             if (active) {
-                g2.setColor(new Color(0x37, 0x41, 0x51));
+                g2.setColor(new Color(0x25, 0x63, 0xEB));
             } else {
-                g2.setColor(new Color(0x1F, 0x29, 0x37));
+                g2.setColor(new Color(0x16, 0x2E, 0x4E));
             }
-            g2.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 9, 9);
+            g2.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 10, 10);
 
-            g2.setColor(active ? Color.WHITE : new Color(0x9C, 0xA3, 0xAF));
+            g2.setColor(active ? Color.WHITE : UiTheme.SIDEBAR_TEXT);
             int bTextX = badgeX + (badgeW - bTextW) / 2;
-            int bTextY = badgeY + (badgeH + bfm.getAscent() - bfm.getDescent()) / 2;
+            int bTextY = badgeY + (badgeH - bfm.getHeight()) / 2 + bfm.getAscent();
             g2.drawString(badgeText, bTextX, bTextY);
 
             g2.dispose();
@@ -148,9 +151,30 @@ public class SidebarPanel extends JPanel {
         topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
 
         // Brand Banner
-        JPanel brandBox = new JPanel(new BorderLayout(8, 2));
+        JPanel brandBox = new JPanel(new GridBagLayout());
         brandBox.setOpaque(false);
-        brandBox.setBorder(new EmptyBorder(20, 18, 20, 18));
+        brandBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        brandBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 74));
+        brandBox.setBorder(new EmptyBorder(18, 18, 18, 18));
+
+        JLabel lblBrandBadge = new JLabel(new UiTheme.VectorIcon(UiTheme.IconType.STORE, 22, Color.WHITE)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0x1D, 0x4E, 0xD8));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 9, 9);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        lblBrandBadge.setPreferredSize(new Dimension(36, 36));
+        lblBrandBadge.setMinimumSize(new Dimension(36, 36));
+        lblBrandBadge.setMaximumSize(new Dimension(36, 36));
+        lblBrandBadge.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JPanel brandText = new JPanel(new GridLayout(2, 1, 0, 1));
+        brandText.setOpaque(false);
 
         JLabel lblBrandTitle = new JLabel("Logistics Hub");
         lblBrandTitle.setFont(UiTheme.FONT_SIDEBAR_BRAND);
@@ -160,31 +184,46 @@ public class SidebarPanel extends JPanel {
         lblBrandSub.setFont(new Font("Segoe UI", Font.BOLD, 10));
         lblBrandSub.setForeground(UiTheme.SIDEBAR_CATEGORY);
 
-        brandBox.add(lblBrandTitle, BorderLayout.NORTH);
-        brandBox.add(lblBrandSub, BorderLayout.SOUTH);
+        brandText.add(lblBrandTitle);
+        brandText.add(lblBrandSub);
+
+        GridBagConstraints bgc = new GridBagConstraints();
+        bgc.gridx = 0;
+        bgc.gridy = 0;
+        bgc.insets = new Insets(0, 0, 0, 10);
+        bgc.anchor = GridBagConstraints.WEST;
+        brandBox.add(lblBrandBadge, bgc);
+
+        bgc.gridx = 1;
+        bgc.weightx = 1.0;
+        bgc.insets = new Insets(0, 0, 0, 0);
+        bgc.fill = GridBagConstraints.HORIZONTAL;
+        brandBox.add(brandText, bgc);
         topContainer.add(brandBox);
 
         // Section Label: MODULES
         JPanel catBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 4));
         catBox.setOpaque(false);
+        catBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        catBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
         JLabel lblCat = new JLabel("MODULES");
         lblCat.setFont(UiTheme.FONT_SIDEBAR_CAT);
         lblCat.setForeground(UiTheme.SIDEBAR_CATEGORY);
         catBox.add(lblCat);
         topContainer.add(catBox);
 
-        // Nav Buttons
-        btnOrders = new NavItemBtn("Orders", new UiTheme.VectorIcon(UiTheme.IconType.SHIP, 14, UiTheme.SIDEBAR_TEXT), () -> selectTab(0));
-        btnProducts = new NavItemBtn("Products", new UiTheme.VectorIcon(UiTheme.IconType.BOX, 14, UiTheme.SIDEBAR_TEXT), () -> selectTab(1));
-        btnRestock = new NavItemBtn("Restock", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14, UiTheme.SIDEBAR_TEXT), () -> selectTab(2));
-        btnShipments = new NavItemBtn("Shipments", new UiTheme.VectorIcon(UiTheme.IconType.WEIGHT, 14, UiTheme.SIDEBAR_TEXT), () -> selectTab(3));
+        // Nav Buttons (inherit dynamic active/inactive foreground color)
+        btnOrders = new NavItemBtn("Orders", new UiTheme.VectorIcon(UiTheme.IconType.SHIP, 14), () -> selectTab(0));
+        btnProducts = new NavItemBtn("Products", new UiTheme.VectorIcon(UiTheme.IconType.BOX, 14), () -> selectTab(1));
+        btnRestock = new NavItemBtn("Restock", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), () -> selectTab(2));
+        btnShipments = new NavItemBtn("Shipments", new UiTheme.VectorIcon(UiTheme.IconType.WEIGHT, 14), () -> selectTab(3));
 
         topContainer.add(btnOrders);
-        topContainer.add(Box.createVerticalStrut(2));
+        topContainer.add(Box.createVerticalStrut(3));
         topContainer.add(btnProducts);
-        topContainer.add(Box.createVerticalStrut(2));
+        topContainer.add(Box.createVerticalStrut(3));
         topContainer.add(btnRestock);
-        topContainer.add(Box.createVerticalStrut(2));
+        topContainer.add(Box.createVerticalStrut(3));
         topContainer.add(btnShipments);
 
         add(topContainer, BorderLayout.NORTH);
@@ -203,11 +242,13 @@ public class SidebarPanel extends JPanel {
         chkTechnicalDetails.setForeground(UiTheme.SIDEBAR_TEXT);
         chkTechnicalDetails.setOpaque(false);
         chkTechnicalDetails.setFocusPainted(false);
+        chkTechnicalDetails.setAlignmentX(Component.LEFT_ALIGNMENT);
         chkTechnicalDetails.setToolTipText("Show data structure metrics, algorithm names, and BST height");
         chkTechnicalDetails.addActionListener(e -> mainFrame.handleToggleTechnicalDetails(chkTechnicalDetails.isSelected()));
 
         JPanel operatorBox = new JPanel(new BorderLayout(4, 2));
         operatorBox.setOpaque(false);
+        operatorBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         operatorBox.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         JLabel lblOp = new JLabel("Admin (Group 1)");

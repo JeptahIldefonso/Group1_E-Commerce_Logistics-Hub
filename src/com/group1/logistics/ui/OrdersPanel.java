@@ -140,12 +140,12 @@ public class OrdersPanel extends JPanel {
                 "Cancel the next order in line without deducting stock");
         btnCancelNext.addActionListener(e -> handleCancelNext());
 
-        btnShipNext = UiTheme.createPrimaryButton("Ship Next Order",
+        btnShipNext = UiTheme.createAccentButton("Ship Next Order",
                 new UiTheme.VectorIcon(UiTheme.IconType.SHIP, 15),
                 "Ship the next order in line and prompt for weight");
         btnShipNext.addActionListener(e -> handleShipNext());
 
-        btnPlaceOrder = UiTheme.createPrimaryButton("+ Place Order",
+        btnPlaceOrder = UiTheme.createPrimaryButton("Place Order",
                 new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 13),
                 "Open modal to intake a new customer order");
         btnPlaceOrder.addActionListener(e -> handleOpenPlaceDialog());
@@ -174,7 +174,7 @@ public class OrdersPanel extends JPanel {
         colModel.getColumn(6).setPreferredWidth(140); // Delivery Speed
 
         JScrollPane sp = UiTheme.createModernScrollPane(tblOrders);
-        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        sp.setBorder(new LineBorder(UiTheme.BORDER_CARD, 1));
         return sp;
     }
 
@@ -217,12 +217,8 @@ public class OrdersPanel extends JPanel {
             lblQueueCapacity.setText("Queue: 0/20 orders waiting");
         } else {
             Order front = service.getOrderQueue().peek();
-            Product p = service.findProduct(front.getSkuId());
-            String productName = p != null ? p.getName() : "Item #" + front.getSkuId();
 
-            lblNextOrderSummary.setText(" Next to Ship: #" + front.getOrderId() + " ("
-                    + front.getCustomerName() + ") • " + front.getQuantity() + " × " + productName
-                    + " • " + front.getDestination());
+            lblNextOrderSummary.setText(" Next to Ship: #" + front.getOrderId() + " (" + front.getCustomerName() + ")");
             lblNextOrderSummary.setBackground(UiTheme.HIGHLIGHT_QUEUE_ROW0);
             lblNextOrderSummary.setForeground(UiTheme.TEXT_PRIMARY);
             lblNextOrderSummary.setBorder(new CompoundBorder(

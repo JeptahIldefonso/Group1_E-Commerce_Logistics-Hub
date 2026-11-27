@@ -7,13 +7,16 @@ import javax.swing.table.AbstractTableModel;
 
 /**
  * Custom AbstractTableModel backed directly by FreightPackageArray.
- * Displays plain-English shipping headers and consistent weight formatting.
+ * Caches formatted weight strings per package reference to avoid String.format GC churn on repaint.
  * Pure standard Java Swing; zero Java Collections.
  */
 public class FreightTableModel extends AbstractTableModel {
     private final FreightPackageArray packages;
     private boolean technicalDetails = false;
     private final String[] columns = {"Package No.", "Order No.", "Deliver To", "Weight", "Delivery Speed", "Shipped #"};
+
+    private FreightPackage[] cachedRefs = new FreightPackage[0];
+    private String[] cachedWeights = new String[0];
 
     public FreightTableModel(FreightPackageArray packages) {
         this.packages = packages;
@@ -22,6 +25,19 @@ public class FreightTableModel extends AbstractTableModel {
     public void setTechnicalDetails(boolean enabled) {
         this.technicalDetails = enabled;
         fireTableDataChanged();
+    }
+
+    private String getFormattedWeight(int row, FreightPackage pkg) {
+        int size = packages.size();
+        if (cachedRefs.length < size) {
+            cachedRefs = new FreightPackage[size];
+            cachedWeights = new String[size];
+        }
+        if (cachedRefs[row] != pkg) {
+            cachedRefs[row] = pkg;
+            cachedWeights[row] = String.format("%.2f kg", pkg.getWeightKg());
+        }
+        return cachedWeights[row];
     }
 
     @Override
@@ -53,15 +69,9 @@ public class FreightTableModel extends AbstractTableModel {
             case 2:
                 return pkg.getDestination();
             case 3:
-                return String.format("%.2f kg", pkg.getWeightKg());
+                return getFormattedWeight(row, pkg);
             case 4:
-                switch (pkg.getDeliveryPriority()) {
-                    case 1: return "Express (fastest)";
-                    case 2: return "Priority";
-                    case 3: return "Standard";
-                    case 4: return "Economy (slowest)";
-                    default: return "Bulk Saver";
-                }
+                return UiTheme.formatDeliverySpeed(pkg.getDeliveryPriority());
             case 5:
                 return technicalDetails ? "Seq #" + pkg.getSequenceNo() : String.valueOf(row + 1);
             default:

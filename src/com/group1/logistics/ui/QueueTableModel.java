@@ -67,13 +67,7 @@ public class QueueTableModel extends AbstractTableModel {
             case 5:
                 return order.getDestination();
             case 6:
-                switch (order.getDeliveryPriority()) {
-                    case 1: return "Express (fastest)";
-                    case 2: return "Priority";
-                    case 3: return "Standard";
-                    case 4: return "Economy (slowest)";
-                    default: return "Bulk Saver";
-                }
+                return UiTheme.formatDeliverySpeed(order.getDeliveryPriority());
             default:
                 return "";
         }

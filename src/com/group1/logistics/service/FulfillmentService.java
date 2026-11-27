@@ -77,6 +77,36 @@ public class FulfillmentService {
     }
 
     /**
+     * Counts units of the given SKU currently reserved in pending queued orders.
+     */
+    public int getReservedQtyInQueue(int skuId) {
+        if (skuId <= 0) {
+            return 0;
+        }
+        int reserved = 0;
+        int size = orderQueue.size();
+        for (int i = 0; i < size; i++) {
+            Order o = orderQueue.get(i);
+            if (o != null && o.getSkuId() == skuId) {
+                reserved += o.getQuantity();
+            }
+        }
+        return reserved;
+    }
+
+    /**
+     * Returns net unreserved stock available for new orders (physical stock minus queued orders, floored at 0).
+     */
+    public int getAvailableStock(int skuId) {
+        Product p = findProduct(skuId);
+        if (p == null) {
+            return 0;
+        }
+        int available = p.getStockQty() - getReservedQtyInQueue(skuId);
+        return available > 0 ? available : 0;
+    }
+
+    /**
      * Case-insensitive product search by name or substring.
      * Searches all products in the catalog using in-order traversal array.
      */
@@ -156,7 +186,7 @@ public class FulfillmentService {
         Product product = findProduct(frontOrder.getSkuId());
 
         if (product == null) {
-            return OpResult.err("Dispatch blocked: SKU #" + frontOrder.getSkuId() + " was discontinued! (Click 'Reject Front' to dequeue).");
+            return OpResult.err("Dispatch blocked: SKU #" + frontOrder.getSkuId() + " was discontinued! (Click 'Cancel Next' to remove).");
         }
 
         if (product.getStockQty() < frontOrder.getQuantity()) {
@@ -334,12 +364,8 @@ public class FulfillmentService {
             inventoryBst.insert(new Product(skuIds[i], names[i], prices[i], stocks[i]));
         }
 
-        // Pre-load realistic queued orders
-        enqueueOrder("Juan Dela Cruz", 300, 2, "Manila Central Hub", 1);
-        enqueueOrder("Maria Santos", 500, 1, "Quezon City Hub", 2);
-        enqueueOrder("Ana Reyes", 200, 3, "Makati Logistics Hub", 1);
-        enqueueOrder("Carlo Mendoza", 400, 1, "Pasig Cargo Depot", 3);
-        enqueueOrder("Elena Ramos", 700, 1, "Taguig Freight Terminal", 4);
+        // Start with a clean order queue so newly placed orders immediately become #1001 (NEXT)
+        // and displayed product counts match unreserved physical shelf quantities.
 
         // Pre-load a restock history
         restock(300, 20);
@@ -347,10 +373,10 @@ public class FulfillmentService {
 
         // Pre-load several dispatched packages
         packageArray.add(new FreightPackage(nextPackageId++, 991, "Manila Central Hub", 1.45, 1, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 992, "Quezon City Hub", 0.65, 2, sequenceCounter++));
+        packageArray.add(new FreightPackage(nextPackageId++, 992, "Quezon City Hub", 0.65, 3, sequenceCounter++));
         packageArray.add(new FreightPackage(nextPackageId++, 993, "Makati Logistics Hub", 8.20, 1, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 994, "Pasig Cargo Depot", 15.40, 3, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 995, "Taguig Freight Terminal", 2.10, 4, sequenceCounter++));
+        packageArray.add(new FreightPackage(nextPackageId++, 994, "Manila Central Hub", 15.40, 3, sequenceCounter++));
+        packageArray.add(new FreightPackage(nextPackageId++, 995, "Quezon City Hub", 2.10, 4, sequenceCounter++));
     }
 
     // =========================================================================
