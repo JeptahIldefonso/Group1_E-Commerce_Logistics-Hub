@@ -19,7 +19,8 @@ public class InventoryBST {
     }
 
     /**
-     * Recursively inserts a product into the BST.
+     * Recursively inserts a product into the BST in a single traversal.
+     * Enforces unique SKU keys (BR-01) and maintains left < root < right invariant.
      * @param product the Product to insert.
      * @return true if inserted, false if product is null, skuId <= 0, or skuId already exists.
      */
@@ -27,28 +28,33 @@ public class InventoryBST {
         if (product == null || product.getSkuId() <= 0) {
             return false;
         }
-        if (search(product.getSkuId()) != null) {
-            return false; // Reject duplicate SKU (BR-01)
+        boolean[] inserted = { false };
+        root = insertRecursive(root, product, inserted);
+        if (inserted[0]) {
+            size++;
         }
-        root = insertRecursive(root, product);
-        size++;
-        return true;
+        return inserted[0];
     }
 
-    private SKUNode insertRecursive(SKUNode current, Product product) {
+    private SKUNode insertRecursive(SKUNode current, Product product, boolean[] inserted) {
         if (current == null) {
+            inserted[0] = true;
             return new SKUNode(product);
         }
-        if (product.getSkuId() < current.product.getSkuId()) {
-            current.left = insertRecursive(current.left, product);
-        } else if (product.getSkuId() > current.product.getSkuId()) {
-            current.right = insertRecursive(current.right, product);
+        int targetId = product.getSkuId();
+        int currentId = current.product.getSkuId();
+        if (targetId < currentId) {
+            current.left = insertRecursive(current.left, product, inserted);
+        } else if (targetId > currentId) {
+            current.right = insertRecursive(current.right, product, inserted);
         }
+        // If targetId == currentId, duplicate SKU rejected (inserted[0] stays false)
         return current;
     }
 
     /**
-     * Searches for a product by its numeric SKU ID in O(log n) average time.
+     * Iteratively searches for a product by its numeric SKU ID in O(log n) average time
+     * and O(1) stack space.
      * @param skuId the numeric ID to find.
      * @return the Product record, or null if not found.
      */
@@ -56,21 +62,15 @@ public class InventoryBST {
         if (skuId <= 0) {
             return null;
         }
-        return searchRecursive(root, skuId);
-    }
-
-    private Product searchRecursive(SKUNode current, int skuId) {
-        if (current == null) {
-            return null;
+        SKUNode current = root;
+        while (current != null) {
+            int currentId = current.product.getSkuId();
+            if (skuId == currentId) {
+                return current.product;
+            }
+            current = (skuId < currentId) ? current.left : current.right;
         }
-        if (skuId == current.product.getSkuId()) {
-            return current.product;
-        }
-        if (skuId < current.product.getSkuId()) {
-            return searchRecursive(current.left, skuId);
-        } else {
-            return searchRecursive(current.right, skuId);
-        }
+        return null;
     }
 
     /**

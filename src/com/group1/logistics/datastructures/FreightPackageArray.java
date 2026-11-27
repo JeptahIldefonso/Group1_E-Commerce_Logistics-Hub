@@ -40,9 +40,7 @@ public class FreightPackageArray {
     private void ensureCapacity() {
         int newCapacity = data.length * 2;
         FreightPackage[] newData = new FreightPackage[newCapacity];
-        for (int i = 0; i < count; i++) {
-            newData[i] = data[i];
-        }
+        System.arraycopy(data, 0, newData, 0, count);
         data = newData;
     }
 

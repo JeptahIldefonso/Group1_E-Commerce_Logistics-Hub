@@ -10,6 +10,10 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
+import java.awt.geom.Path2D;
+import java.awt.geom.RoundRectangle2D;
 
 /**
  * Pure standard Java Swing styling and design tokens helper.
@@ -20,51 +24,53 @@ import java.awt.*;
  */
 public class UiTheme {
 
-    // Color Palette
-    public static final Color BG_WINDOW = new Color(0xF3, 0xF4, 0xF6); // Subtle neutral gray
+    // Color Palette (Warm Alabaster Canvas + Crisp White Cards)
+    public static final Color BG_WINDOW = new Color(0xF3, 0xF2, 0xEE); // Warm off-white linen canvas
     public static final Color SURFACE = new Color(0xFF, 0xFF, 0xFF);
-    public static final Color SURFACE_ALT = new Color(0xF9, 0xFA, 0xFB);
-    public static final Color BORDER = new Color(0xD1, 0xD5, 0xDB);
-    public static final Color BORDER_CARD = new Color(0xE5, 0xE7, 0xEB);
+    public static final Color SURFACE_ALT = new Color(0xF8, 0xF7, 0xF4); // Warm subtle tint
+    public static final Color BORDER = new Color(0xD8, 0xD6, 0xCE);
+    public static final Color BORDER_CARD = new Color(0xE6, 0xE4, 0xDD);
+    public static final Color TABLE_GRID_LINE = new Color(0xF0, 0xEE, 0xE8);
 
-    public static final Color TEXT_PRIMARY = new Color(0x11, 0x18, 0x27);
-    public static final Color TEXT_MUTED = new Color(0x4B, 0x55, 0x63);
+    public static final Color TEXT_PRIMARY = new Color(0x0F, 0x17, 0x2A);
+    public static final Color TEXT_MUTED = new Color(0x57, 0x53, 0x4E);
 
     // Button / Role Colors
-    public static final Color PRIMARY_BLUE = new Color(0x1D, 0x4E, 0xD8); // Main action blue
-    public static final Color POSITIVE_GREEN = new Color(0x15, 0x80, 0x3D); // Emerald green (Add)
-    public static final Color WARNING_AMBER = new Color(0xD9, 0x77, 0x06); // Warm amber (Undo)
+    public static final Color PRIMARY_NAVY = new Color(0x0D, 0x23, 0x40); // Executive midnight navy CTA
+    public static final Color PRIMARY_BLUE = new Color(0x1D, 0x4E, 0xD8); // Accent action blue
+    public static final Color POSITIVE_GREEN = new Color(0x15, 0x80, 0x3D); // Emerald green (Add Stock)
+    public static final Color WARNING_AMBER = new Color(0xB4, 0x53, 0x09); // Deep amber (Undo)
     public static final Color DANGER_RED = new Color(0xDC, 0x26, 0x26); // Strong red (Cancel/Delete)
-    public static final Color NEUTRAL_DARK = new Color(0x37, 0x41, 0x51); // Slate gray
+    public static final Color NEUTRAL_DARK = new Color(0x1E, 0x29, 0x3B); // Slate ink
 
     // Row Highlights for FIFO / LIFO
-    public static final Color HIGHLIGHT_QUEUE_ROW0 = new Color(0xEB, 0xF5, 0xFF); // Soft sky blue
-    public static final Color HIGHLIGHT_QUEUE_ROW0_BORDER = new Color(0x93, 0xC5, 0xFD);
-    public static final Color HIGHLIGHT_STACK_ROW0 = new Color(0xFE, 0xF3, 0xC7); // Soft warm amber
-    public static final Color HIGHLIGHT_STACK_ROW0_BORDER = new Color(0xFC, 0xD3, 0x4D);
+    public static final Color HIGHLIGHT_QUEUE_ROW0 = new Color(0xEF, 0xF6, 0xFF); // Soft sky blue
+    public static final Color HIGHLIGHT_QUEUE_ROW0_BORDER = new Color(0xBF, 0xDB, 0xFE);
+    public static final Color HIGHLIGHT_STACK_ROW0 = new Color(0xFF, 0xFB, 0xEB); // Soft warm amber
+    public static final Color HIGHLIGHT_STACK_ROW0_BORDER = new Color(0xFD, 0xE6, 0x8A);
 
     // Stock Status Text Colors
     public static final Color STOCK_IN_TEXT = new Color(0x16, 0x65, 0x34);
-    public static final Color STOCK_LOW_TEXT = new Color(0xD9, 0x77, 0x06);
+    public static final Color STOCK_LOW_TEXT = new Color(0xB4, 0x53, 0x09);
     public static final Color STOCK_OUT_TEXT = new Color(0xDC, 0x26, 0x26);
 
-    // Sidebar Design Tokens (Dark SaaS theme matching ElectronDB style)
-    public static final Color SIDEBAR_BG = new Color(0x11, 0x18, 0x27); // #111827 Dark slate
-    public static final Color SIDEBAR_HOVER = new Color(0x1F, 0x29, 0x37); // #1F2937
-    public static final Color SIDEBAR_ACTIVE = new Color(0x1E, 0x29, 0x3B); // #1E293B
-    public static final Color SIDEBAR_TEXT = new Color(0x9C, 0xA3, 0xAF); // #9CA3AF Muted gray
+    // Sidebar Design Tokens (Rich Midnight Navy Blue)
+    public static final Color SIDEBAR_BG = new Color(0x0B, 0x1B, 0x33); // Deep navy blue
+    public static final Color SIDEBAR_HOVER = new Color(0x13, 0x2A, 0x4D); // Hover navy
+    public static final Color SIDEBAR_ACTIVE = new Color(0x1A, 0x37, 0x63); // Active navy pill
+    public static final Color SIDEBAR_TEXT = new Color(0xCB, 0xD5, 0xE1); // Soft slate-white
     public static final Color SIDEBAR_TEXT_ACTIVE = Color.WHITE;
-    public static final Color SIDEBAR_ACCENT = new Color(0x25, 0x63, 0xEB); // #2563EB Blue accent
-    public static final Color SIDEBAR_CATEGORY = new Color(0x6B, 0x72, 0x80); // #6B7280 Muted label
-    public static final Color SIDEBAR_BORDER = new Color(0x1F, 0x29, 0x37);
+    public static final Color SIDEBAR_ACCENT = new Color(0x38, 0xBD, 0xF8); // Sky-blue active indicator
+    public static final Color SIDEBAR_CATEGORY = new Color(0x7C, 0x94, 0xB8); // Periwinkle-slate label
+    public static final Color SIDEBAR_BORDER = new Color(0x15, 0x2B, 0x4B);
 
     // Inline Feedback Bar Colors
     public static final Color FEEDBACK_SUCCESS_BG = new Color(0xDC, 0xFC, 0xE7);
     public static final Color FEEDBACK_SUCCESS_TEXT = new Color(0x14, 0x53, 0x2D);
     public static final Color FEEDBACK_ERROR_BG = new Color(0xFE, 0xE2, 0xE2);
     public static final Color FEEDBACK_ERROR_TEXT = new Color(0x7F, 0x1D, 0x1D);
-    public static final Color FEEDBACK_READY_BG = new Color(0xF3, 0xF4, 0xF6);
-    public static final Color FEEDBACK_READY_TEXT = new Color(0x37, 0x41, 0x51);
+    public static final Color FEEDBACK_READY_BG = new Color(0xEC, 0xEB, 0xE5);
+    public static final Color FEEDBACK_READY_TEXT = new Color(0x44, 0x40, 0x3C);
 
     // Typography (13-14pt for optimal legibility)
     public static final Font FONT_PAGE_TITLE = new Font("Segoe UI", Font.BOLD, 20);
@@ -85,7 +91,7 @@ public class UiTheme {
     // =========================================================================
 
     public enum IconType {
-        PLUS, SHIP, CANCEL, SEARCH, DELETE, UNDO, WEIGHT, SPEED, BOX, CLOSE
+        PLUS, SHIP, CANCEL, SEARCH, DELETE, UNDO, REFRESH, WEIGHT, SPEED, BOX, STORE, CLOSE
     }
 
     public static class VectorIcon implements Icon {
@@ -161,11 +167,25 @@ public class UiTheme {
                     g2.drawLine(x + size / 2, y + 6, x + size / 2, y + size - 4);
                     break;
 
-                case UNDO: // Curved Rollback Arrow
+                case UNDO: // Crisp U-turn Rollback Arrow
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    g2.drawLine(x + 2, y + 5, x + 5, y + 2);
-                    g2.drawLine(x + 2, y + 5, x + 5, y + 8);
-                    g2.drawArc(x + 3, y + 3, size - 5, size - 5, 90, 180);
+                    // Arrowhead pointing left at top-left
+                    g2.drawLine(x + 2, y + 4, x + 5, y + 1);
+                    g2.drawLine(x + 2, y + 4, x + 5, y + 7);
+                    // Top horizontal shaft -> curved right loop -> bottom base
+                    int rightArcX = x + size - 7;
+                    g2.drawLine(x + 2, y + 4, rightArcX, y + 4);
+                    g2.drawArc(rightArcX - 3, y + 4, 6, size - 7, 90, -180);
+                    g2.drawLine(x + 4, y + size - 3, rightArcX, y + size - 3);
+                    break;
+
+                case REFRESH: // Circular Reload Arrow
+                    g2.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    g2.drawArc(x + 2, y + 2, size - 4, size - 4, 35, 285);
+                    int ax = x + size - 3;
+                    int ay = y + 4;
+                    g2.drawLine(ax, ay - 2, ax, ay + 2);
+                    g2.drawLine(ax, ay + 2, ax - 4, ay + 2);
                     break;
 
                 case WEIGHT: // Scale / Balance
@@ -190,6 +210,48 @@ public class UiTheme {
                     g2.drawLine(x + size / 2, y + 6, x + size / 2, y + size - 2);
                     break;
 
+                case STORE: { // Storefront with striped awning, 4 scallops, left window, right door
+                    Graphics2D gs = (Graphics2D) g2.create();
+                    gs.translate(x, y);
+                    double s = size / 24.0;
+                    gs.scale(s, s);
+
+                    // 4 Awning roof stripes (slanted trapezoid panels)
+                    double[][] panels = {
+                            {4.2, 3.0, 7.6, 3.0, 6.4, 8.7, 2.0, 8.7},
+                            {8.5, 3.0, 11.55, 3.0, 11.55, 8.7, 7.3, 8.7},
+                            {12.45, 3.0, 15.5, 3.0, 16.7, 8.7, 12.45, 8.7},
+                            {16.4, 3.0, 19.8, 3.0, 22.0, 8.7, 17.6, 8.7}
+                    };
+                    for (int i = 0; i < panels.length; i++) {
+                        Path2D.Double panel = new Path2D.Double();
+                        panel.moveTo(panels[i][0], panels[i][1]);
+                        panel.lineTo(panels[i][2], panels[i][3]);
+                        panel.lineTo(panels[i][4], panels[i][5]);
+                        panel.lineTo(panels[i][6], panels[i][7]);
+                        panel.closePath();
+                        gs.fill(panel);
+                    }
+
+                    // 4 Scalloped awning arches underneath
+                    double[] scallopX = {2.0, 7.2, 12.4, 17.6};
+                    for (int i = 0; i < scallopX.length; i++) {
+                        double sx = scallopX[i];
+                        Area scallop = new Area(new java.awt.geom.Rectangle2D.Double(sx, 9.25, 4.4, 0.7));
+                        scallop.add(new Area(new Arc2D.Double(sx, 7.55, 4.4, 4.3, 180, 180, Arc2D.CHORD)));
+                        gs.fill(scallop);
+                    }
+
+                    // Store body base with transparent window (left) and open doorway (right)
+                    Area base = new Area(new RoundRectangle2D.Double(3.3, 12.2, 17.4, 8.8, 1.2, 1.2));
+                    base.subtract(new Area(new RoundRectangle2D.Double(5.2, 14.3, 6.4, 4.1, 0.9, 0.9)));
+                    base.subtract(new Area(new java.awt.geom.Rectangle2D.Double(13.9, 14.3, 4.3, 6.8)));
+                    gs.fill(base);
+
+                    gs.dispose();
+                    break;
+                }
+
                 case CLOSE: // Modal close X
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawLine(x + 3, y + 3, x + size - 3, y + size - 3);
@@ -201,8 +263,58 @@ public class UiTheme {
     }
 
     // =========================================================================
-    // BUTTON BUILDERS WITH EMBEDDED ICONS
+    // BUTTON BUILDERS WITH EMBEDDED ICONS (TACTILE PURE-SWING)
     // =========================================================================
+
+    private static void paintButtonLabel(JButton btn, Graphics2D g2, Icon icon, Color activeFg, int yOffset) {
+        int w = btn.getWidth();
+        int h = btn.getHeight();
+        String text = btn.getText();
+
+        g2.setFont(btn.getFont());
+        FontMetrics fm = g2.getFontMetrics();
+
+        int iconW = (icon != null) ? icon.getIconWidth() : 0;
+        int gap = (icon != null && text != null && !text.isEmpty()) ? 7 : 0;
+        int textW = (text != null && !text.isEmpty()) ? fm.stringWidth(text) : 0;
+        int totalW = iconW + gap + textW;
+
+        int startX = (w - totalW) / 2;
+        int textY = (h - fm.getHeight()) / 2 + fm.getAscent() + yOffset;
+
+        Color drawColor = btn.isEnabled() ? activeFg : new Color(0x9C, 0xA3, 0xAF);
+        btn.setForeground(drawColor);
+
+        if (icon != null) {
+            int iconY = (h - icon.getIconHeight()) / 2 + yOffset;
+            icon.paintIcon(btn, g2, startX, iconY);
+        }
+
+        if (text != null && !text.isEmpty()) {
+            g2.setColor(drawColor);
+            g2.drawString(text, startX + iconW + gap, textY);
+        }
+    }
+
+    private static void configureBaseButton(JButton btn, Icon icon, String tooltip) {
+        btn.setFont(FONT_BOLD);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(false);
+        btn.setRolloverEnabled(true);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        FontMetrics fm = btn.getFontMetrics(FONT_BOLD);
+        String txt = btn.getText();
+        int textW = (txt != null && !txt.isEmpty()) ? fm.stringWidth(txt) : 0;
+        int iconW = (icon != null) ? icon.getIconWidth() + (textW > 0 ? 7 : 0) : 0;
+        btn.setPreferredSize(new Dimension(textW + iconW + 32, 36));
+
+        if (tooltip != null && !tooltip.isEmpty()) {
+            btn.setToolTipText(tooltip);
+        }
+    }
 
     public static JButton createStyledButton(String text, Icon icon, Color bg, Color fg, String tooltip) {
         JButton btn = new JButton(text) {
@@ -214,69 +326,40 @@ public class UiTheme {
 
                 int w = getWidth();
                 int h = getHeight();
+                boolean pressed = isEnabled() && getModel().isPressed();
+                boolean hover = isEnabled() && getModel().isRollover();
 
                 if (!isEnabled()) {
-                    g2.setColor(new Color(0xE5, 0xE7, 0xEB));
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                    g2.setColor(new Color(0xD1, 0xD5, 0xDB));
-                    g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
-                } else if (getModel().isPressed()) {
-                    g2.setColor(bg.darker());
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                } else if (getModel().isRollover()) {
-                    g2.setColor(brighten(bg, 0.15f));
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                    g2.setColor(new Color(0xE7, 0xE5, 0xE0));
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(new Color(0xD6, 0xD3, 0xCC));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
                 } else {
-                    g2.setColor(bg);
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                }
+                    Color fill = pressed ? darken(bg, 0.16f) : (hover ? brighten(bg, 0.14f) : bg);
+                    g2.setColor(fill);
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
 
-                // Render Icon + Centered Text
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-
-                int iconW = (icon != null) ? icon.getIconWidth() : 0;
-                int gap = (icon != null && text != null && !text.isEmpty()) ? 7 : 0;
-                int textW = (text != null && !text.isEmpty()) ? fm.stringWidth(getText()) : 0;
-                int totalW = iconW + gap + textW;
-
-                int startX = (w - totalW) / 2;
-                int textY = (h + fm.getAscent()) / 2 - 2;
-
-                if (icon != null) {
-                    int iconY = (h - icon.getIconHeight()) / 2;
-                    icon.paintIcon(this, g2, startX, iconY);
-                }
-
-                if (text != null && !text.isEmpty()) {
-                    int textX = startX + iconW + gap;
-                    if (!isEnabled()) {
-                        g2.setColor(new Color(0x9C, 0xA3, 0xAF));
-                    } else {
-                        g2.setColor(fg);
+                    // Crisp outer edge & subtle top sheen
+                    g2.setColor(darken(bg, 0.25f));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
+                    if (!pressed) {
+                        g2.setColor(new Color(255, 255, 255, 36));
+                        g2.drawLine(4, 1, w - 5, 1);
                     }
-                    g2.drawString(getText(), textX, textY);
                 }
 
+                paintButtonLabel(this, g2, icon, fg, pressed ? 1 : 0);
                 g2.dispose();
             }
         };
 
-        btn.setFont(FONT_BOLD);
-        btn.setContentAreaFilled(false);
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
-        btn.setOpaque(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(btn.getPreferredSize().width + (icon != null ? 32 : 24), 34));
-
-        if (tooltip != null && !tooltip.isEmpty()) {
-            btn.setToolTipText(tooltip);
-        }
+        configureBaseButton(btn, icon, tooltip);
         return btn;
     }
 
-    public static JButton createOutlineDangerButton(String text, Icon icon, String tooltip) {
+    public static JButton createOutlinedButton(String text, Icon icon, Color baseBg, Color hoverBg,
+                                               Color pressedBg, Color borderColor, Color hoverBorder,
+                                               Color fg, String tooltip) {
         JButton btn = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -286,71 +369,86 @@ public class UiTheme {
 
                 int w = getWidth();
                 int h = getHeight();
+                boolean pressed = isEnabled() && getModel().isPressed();
+                boolean hover = isEnabled() && getModel().isRollover();
 
                 if (!isEnabled()) {
-                    g2.setColor(SURFACE);
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                    g2.setColor(new Color(0xE5, 0xE7, 0xEB));
-                    g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
-                } else if (getModel().isPressed()) {
-                    g2.setColor(new Color(0xFE, 0xCD, 0xCD));
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                    g2.setColor(DANGER_RED);
-                    g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(0xFE, 0xE2, 0xE2));
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                    g2.setColor(DANGER_RED);
-                    g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
+                    g2.setColor(new Color(0xFA, 0xF9, 0xF6));
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(new Color(0xE6, 0xE4, 0xDD));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
+                } else if (pressed) {
+                    g2.setColor(pressedBg);
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(hoverBorder);
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
+                } else if (hover) {
+                    g2.setColor(hoverBg);
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(hoverBorder);
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
                 } else {
-                    g2.setColor(SURFACE);
-                    g2.fillRoundRect(0, 0, w, h, 6, 6);
-                    g2.setColor(new Color(0xFD, 0xBA, 0xBA));
-                    g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
+                    g2.setColor(baseBg);
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(borderColor);
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
                 }
 
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-
-                int iconW = (icon != null) ? icon.getIconWidth() : 0;
-                int gap = (icon != null && text != null && !text.isEmpty()) ? 6 : 0;
-                int textW = (text != null && !text.isEmpty()) ? fm.stringWidth(getText()) : 0;
-                int totalW = iconW + gap + textW;
-
-                int startX = (w - totalW) / 2;
-                int textY = (h + fm.getAscent()) / 2 - 2;
-
-                if (icon != null) {
-                    int iconY = (h - icon.getIconHeight()) / 2;
-                    icon.paintIcon(this, g2, startX, iconY);
-                }
-
-                if (text != null && !text.isEmpty()) {
-                    int textX = startX + iconW + gap;
-                    if (!isEnabled()) {
-                        g2.setColor(new Color(0x9C, 0xA3, 0xAF));
-                    } else {
-                        g2.setColor(DANGER_RED);
-                    }
-                    g2.drawString(getText(), textX, textY);
-                }
-
+                paintButtonLabel(this, g2, icon, fg, pressed ? 1 : 0);
                 g2.dispose();
             }
         };
 
-        btn.setFont(FONT_BOLD);
-        btn.setContentAreaFilled(false);
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
-        btn.setOpaque(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(btn.getPreferredSize().width + (icon != null ? 28 : 20), 32));
-
-        if (tooltip != null && !tooltip.isEmpty()) {
-            btn.setToolTipText(tooltip);
-        }
+        configureBaseButton(btn, icon, tooltip);
         return btn;
+    }
+
+    /**
+     * Button that cleanly flips between Navy primary (active) and Crisp White outlined (inactive).
+     */
+    public static JButton createToggleSortButton(String text, Icon icon, boolean initialActive, String tooltip) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                int w = getWidth();
+                int h = getHeight();
+                boolean active = Boolean.TRUE.equals(getClientProperty("ui.active"));
+                boolean pressed = isEnabled() && getModel().isPressed();
+                boolean hover = isEnabled() && getModel().isRollover();
+
+                if (active) {
+                    Color fill = pressed ? darken(PRIMARY_NAVY, 0.16f) : (hover ? brighten(PRIMARY_NAVY, 0.14f) : PRIMARY_NAVY);
+                    g2.setColor(fill);
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(darken(PRIMARY_NAVY, 0.25f));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
+                    paintButtonLabel(this, g2, icon, Color.WHITE, pressed ? 1 : 0);
+                } else {
+                    Color fill = pressed ? new Color(0xE8, 0xE6, 0xDF) : (hover ? new Color(0xF5, 0xF4, 0xEF) : SURFACE);
+                    g2.setColor(fill);
+                    g2.fillRoundRect(0, 0, w, h, 8, 8);
+                    g2.setColor(hover ? new Color(0xB8, 0xB5, 0xAC) : BORDER);
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
+                    paintButtonLabel(this, g2, icon, NEUTRAL_DARK, pressed ? 1 : 0);
+                }
+                g2.dispose();
+            }
+        };
+
+        btn.putClientProperty("ui.active", Boolean.valueOf(initialActive));
+        configureBaseButton(btn, icon, tooltip);
+        return btn;
+    }
+
+    public static void setToggleSortActive(JButton btn, boolean active) {
+        if (btn != null) {
+            btn.putClientProperty("ui.active", Boolean.valueOf(active));
+            btn.repaint();
+        }
     }
 
     private static Color brighten(Color c, float factor) {
@@ -360,12 +458,23 @@ public class UiTheme {
         return new Color(r, g, b);
     }
 
+    private static Color darken(Color c, float factor) {
+        int r = Math.max(0, (int) (c.getRed() * (1.0f - factor)));
+        int g = Math.max(0, (int) (c.getGreen() * (1.0f - factor)));
+        int b = Math.max(0, (int) (c.getBlue() * (1.0f - factor)));
+        return new Color(r, g, b);
+    }
+
     public static JButton createPrimaryButton(String text, Icon icon, String tooltip) {
-        return createStyledButton(text, icon, PRIMARY_BLUE, Color.WHITE, tooltip);
+        return createStyledButton(text, icon, PRIMARY_NAVY, Color.WHITE, tooltip);
     }
 
     public static JButton createPrimaryButton(String text, String tooltip) {
         return createPrimaryButton(text, null, tooltip);
+    }
+
+    public static JButton createAccentButton(String text, Icon icon, String tooltip) {
+        return createStyledButton(text, icon, PRIMARY_BLUE, Color.WHITE, tooltip);
     }
 
     public static JButton createSuccessButton(String text, Icon icon, String tooltip) {
@@ -377,7 +486,15 @@ public class UiTheme {
     }
 
     public static JButton createWarningButton(String text, Icon icon, String tooltip) {
-        return createStyledButton(text, icon, WARNING_AMBER, Color.WHITE, tooltip);
+        return createOutlinedButton(
+                text, icon,
+                new Color(0xFF, 0xFB, 0xEB), // Soft warm amber surface
+                new Color(0xFE, 0xF3, 0xC7), // Hover amber
+                new Color(0xFD, 0xE6, 0x8A), // Pressed amber
+                new Color(0xF5, 0x9E, 0x0B), // Crisp amber border
+                new Color(0xD9, 0x77, 0x06),
+                WARNING_AMBER, tooltip
+        );
     }
 
     public static JButton createWarningButton(String text, String tooltip) {
@@ -385,11 +502,31 @@ public class UiTheme {
     }
 
     public static JButton createSecondaryButton(String text, Icon icon, String tooltip) {
-        return createStyledButton(text, icon, NEUTRAL_DARK, Color.WHITE, tooltip);
+        return createOutlinedButton(
+                text, icon,
+                SURFACE,                     // Crisp white button matching ElectronDB
+                new Color(0xF5, 0xF4, 0xEF), // Warm stone hover
+                new Color(0xE8, 0xE6, 0xDF), // Warm stone pressed
+                BORDER,
+                new Color(0xB8, 0xB5, 0xAC),
+                NEUTRAL_DARK, tooltip
+        );
     }
 
     public static JButton createSecondaryButton(String text, String tooltip) {
         return createSecondaryButton(text, null, tooltip);
+    }
+
+    public static JButton createOutlineDangerButton(String text, Icon icon, String tooltip) {
+        return createOutlinedButton(
+                text, icon,
+                SURFACE,
+                new Color(0xFE, 0xF2, 0xF2),
+                new Color(0xFE, 0xE2, 0xE2),
+                new Color(0xFC, 0xA5, 0xA5),
+                DANGER_RED,
+                DANGER_RED, tooltip
+        );
     }
 
     public static JButton createOutlineDangerButton(String text, String tooltip) {
@@ -495,9 +632,10 @@ public class UiTheme {
     public static void configureTable(JTable table) {
         table.setRowHeight(36);
         table.setFont(FONT_REGULAR);
+        table.setBackground(SURFACE);
         table.setSelectionBackground(new Color(0xEB, 0xF5, 0xFF));
         table.setSelectionForeground(TEXT_PRIMARY);
-        table.setGridColor(new Color(0xF3, 0xF4, 0xF6));
+        table.setGridColor(TABLE_GRID_LINE);
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
         table.setIntercellSpacing(new Dimension(0, 1));
@@ -507,11 +645,11 @@ public class UiTheme {
 
         JTableHeader header = table.getTableHeader();
         header.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        header.setBackground(new Color(0xF9, 0xFA, 0xFB));
-        header.setForeground(new Color(0x4B, 0x55, 0x63));
+        header.setBackground(SURFACE_ALT);
+        header.setForeground(TEXT_MUTED);
         header.setPreferredSize(new Dimension(header.getWidth(), 36));
         header.setReorderingAllowed(false);
-        header.setBorder(new MatteBorder(0, 0, 1, 0, new Color(0xE5, 0xE7, 0xEB)));
+        header.setBorder(new MatteBorder(0, 0, 1, 0, BORDER_CARD));
     }
 
     /**
@@ -520,12 +658,13 @@ public class UiTheme {
      */
     public static class StatusPillRenderer extends DefaultTableCellRenderer {
         private String pillText = "";
+        private Color rowBg = SURFACE;
         private Color pillBg = new Color(0xDC, 0xFC, 0xE7);
         private Color pillFg = new Color(0x16, 0x65, 0x34);
         private Color pillBorder = new Color(0xBB, 0xF7, 0xD0);
 
         public StatusPillRenderer() {
-            setOpaque(false);
+            setOpaque(true);
             setHorizontalAlignment(SwingConstants.CENTER);
         }
 
@@ -533,6 +672,7 @@ public class UiTheme {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
             super.getTableCellRendererComponent(table, "", isSelected, hasFocus, row, col);
             this.pillText = value != null ? value.toString() : "";
+            this.rowBg = isSelected ? table.getSelectionBackground() : (row % 2 == 1 ? SURFACE_ALT : SURFACE);
 
             if (pillText.contains("Out of Stock")) {
                 pillBg = new Color(0xFE, 0xE2, 0xE2);
@@ -563,6 +703,9 @@ public class UiTheme {
             int w = getWidth();
             int h = getHeight();
 
+            g2.setColor(rowBg);
+            g2.fillRect(0, 0, w, h);
+
             if (pillText != null && !pillText.isEmpty()) {
                 g2.setFont(FONT_BADGE);
                 FontMetrics fm = g2.getFontMetrics();
@@ -586,12 +729,14 @@ public class UiTheme {
         }
     }
 
+    private static final Border CELL_PADDING = new EmptyBorder(3, 10, 3, 10);
+
     public static DefaultTableCellRenderer createQueueCellRenderer() {
         return new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
-                setBorder(new EmptyBorder(3, 8, 3, 8));
+                setBorder(CELL_PADDING);
 
                 if (col == 0 || col == 1 || col == 6) {
                     setHorizontalAlignment(SwingConstants.CENTER);
@@ -624,7 +769,7 @@ public class UiTheme {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
-                setBorder(new EmptyBorder(3, 8, 3, 8));
+                setBorder(CELL_PADDING);
 
                 if (col == 0 || col == 3) {
                     setHorizontalAlignment(SwingConstants.CENTER);
@@ -657,7 +802,7 @@ public class UiTheme {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
-                setBorder(new EmptyBorder(3, 8, 3, 8));
+                setBorder(CELL_PADDING);
 
                 if (col == 0) {
                     setHorizontalAlignment(SwingConstants.CENTER);
@@ -703,7 +848,7 @@ public class UiTheme {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
-                setBorder(new EmptyBorder(3, 8, 3, 8));
+                setBorder(CELL_PADDING);
 
                 if (col == 0 || col == 1 || col == 4 || col == 5) {
                     setHorizontalAlignment(SwingConstants.CENTER);
@@ -725,5 +870,18 @@ public class UiTheme {
                 return c;
             }
         };
+    }
+
+    /**
+     * Maps internal delivery priority codes (1..5) to concise UI labels.
+     */
+    public static String formatDeliverySpeed(int deliveryPriority) {
+        switch (deliveryPriority) {
+            case 1: return "Express (fastest)";
+            case 2: return "Priority";
+            case 3: return "Standard";
+            case 4: return "Economy (slowest)";
+            default: return "Bulk Saver";
+        }
     }
 }

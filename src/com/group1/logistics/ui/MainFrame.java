@@ -113,7 +113,7 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Switches the active module view in the center CardLayout.
+     * Switches the active module view in the center CardLayout and refreshes its live data.
      */
     public void showTab(int index) {
         if (cardLayout == null || pnlContent == null) {
@@ -121,15 +121,19 @@ public class MainFrame extends JFrame {
         }
         switch (index) {
             case 0:
+                ordersPanel.refreshTables();
                 cardLayout.show(pnlContent, CARD_ORDERS);
                 break;
             case 1:
+                catalogPanel.refreshTables();
                 cardLayout.show(pnlContent, CARD_PRODUCTS);
                 break;
             case 2:
+                restockPanel.refreshTables();
                 cardLayout.show(pnlContent, CARD_RESTOCK);
                 break;
             case 3:
+                freightPanel.refreshTables();
                 cardLayout.show(pnlContent, CARD_SHIPMENTS);
                 break;
         }

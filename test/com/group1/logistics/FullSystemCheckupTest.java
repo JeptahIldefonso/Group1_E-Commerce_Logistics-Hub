@@ -57,7 +57,7 @@ public class FullSystemCheckupTest {
         FulfillmentService service = new FulfillmentService();
 
         check(service.getInventoryBst().size() == 14, "Catalog initialized with exactly 14 seed products");
-        check(service.getOrderQueue().size() == 5, "Order queue initialized with 5 pending orders");
+        check(service.getOrderQueue().size() == 0, "Order queue initialized clean with 0 pending orders");
         check(service.getRestockStack().size() == 2, "Restock stack initialized with 2 audit actions");
         check(service.getPackageArray().size() == 5, "Freight array initialized with 5 dispatched packages");
 
@@ -72,7 +72,12 @@ public class FullSystemCheckupTest {
         System.out.println("\n--- [CHECK 2] Module 1: OrderQueue (FIFO) & Dispatch Lifecycle ---");
         FulfillmentService service = new FulfillmentService();
 
-        int initialQueueSize = service.getOrderQueue().size(); // 5
+        check(service.enqueueOrder("Juan Dela Cruz", 300, 2, "Manila Central Hub", 1).isSuccess(),
+                "Enqueued fresh order #1001 into clean queue");
+        check(service.enqueueOrder("Maria Santos", 500, 1, "Quezon City Hub", 2).isSuccess(),
+                "Enqueued second order #1002 behind #1001");
+
+        int initialQueueSize = service.getOrderQueue().size(); // 2
         int initialDispatched = service.getPackageArray().size(); // 5
 
         // Front order is #1001 for Juan Dela Cruz, 2x SKU #300
@@ -253,9 +258,12 @@ public class FullSystemCheckupTest {
         OpResult zeroQty = service.enqueueOrder("Maria Santos", 150, 0, "Manila", 1);
         check(!zeroQty.isSuccess() && zeroQty.getMessage().contains("at least 1"), "Order with quantity 0 rejected");
 
+        // Enqueue 1 valid order so weight guards execute against a real queued order
+        service.enqueueOrder("Weight Test Buyer", 150, 1, "Manila", 1);
+
         // Invalid weight bounds (0.01 - 1000.00 kg)
         OpResult heavyWeight = service.dispatchNext(2000.0);
-        check(!heavyWeight.isSuccess(), "Dispatch with 2000 kg rejected by 1000 kg ceiling (BR-08)");
+        check(!heavyWeight.isSuccess() && heavyWeight.getMessage().contains("1000"), "Dispatch with 2000 kg rejected by 1000 kg ceiling (BR-08)");
 
         OpResult negativeWeight = service.dispatchNext(-5.0);
         check(!negativeWeight.isSuccess(), "Dispatch with negative weight rejected");
@@ -281,9 +289,46 @@ public class FullSystemCheckupTest {
 
         // Check model row counts match data structures
         check(catalogModel.getRowCount() == service.getInventoryBst().size(), "Catalog table row count matches BST size");
+        check(catalogModel.getHealthyCount() + catalogModel.getAttentionCount() == catalogModel.getTotalCount(),
+                "Cached stock KPI counts sum exactly to total catalog count");
+        int row150 = catalogModel.findRowBySkuId(150);
+        check(row150 >= 0 && catalogModel.getProductAt(row150).getSkuId() == 150,
+                "Binary row lookup locates SKU #150 in cached table model");
+        int rowWebcam = catalogModel.findRowByNameQuery("webcam");
+        check(rowWebcam == row150, "Zero-allocation name lookup matches same SKU #150 row");
+        check(catalogModel.getValueAt(row150, 2).toString().startsWith("₱"),
+                "Cached price string starts with Peso sign");
+        check(freightModel.getValueAt(0, 3).toString().endsWith(" kg"),
+                "Cached freight weight string formatted consistently");
         check(queueModel.getRowCount() == service.getOrderQueue().size(), "Queue table row count matches OrderQueue size");
         check(restockModel.getRowCount() == service.getRestockStack().size(), "Restock table row count matches RestockStack size");
         check(freightModel.getRowCount() == service.getPackageArray().size(), "Freight table row count matches FreightPackageArray size");
+
+        // Verify queued order reservation adapts available stock & Out of Stock badge cleanly
+        service.getOrderQueue().clear();
+        check(service.getAvailableStock(800) == 8, "Motorized Standing Desk (SKU #800) starts with 8 available");
+        OpResult reserveDesk = service.enqueueOrder("Test Buyer", 800, 8, "Manila Central Hub", 1);
+        check(reserveDesk.isSuccess(), "Queued order for all 8 units of SKU #800");
+        CatalogTableModel liveCatalog = new CatalogTableModel(service.getInventoryBst(), service);
+        int deskRow = liveCatalog.findRowBySkuId(800);
+        check(service.getAvailableStock(800) == 0, "Available stock for SKU #800 drops immediately to 0 when queued");
+        check(((Integer) liveCatalog.getValueAt(deskRow, 3)) == 0, "Catalog table In Stock shows 0 after queuing 8");
+        check("Out of Stock".equals(liveCatalog.getValueAt(deskRow, 4)), "Catalog table Status updates immediately to Out of Stock");
+
+        // Cancel restores available stock back to 8
+        service.rejectFrontOrder();
+        liveCatalog.refresh();
+        check(service.getAvailableStock(800) == 8, "Cancelling queued order restores SKU #800 available stock to 8");
+        check("Low Stock".equals(liveCatalog.getValueAt(deskRow, 4)), "Status reverts to Low Stock after cancel");
+
+        // Enqueue 8 again and dispatch -> stays 0 without double-deduction
+        service.enqueueOrder("Final Buyer", 800, 8, "Manila Central Hub", 1);
+        OpResult shipDesk = service.dispatchNext(12.5);
+        check(shipDesk.isSuccess(), "Dispatching queued 8-unit order succeeds");
+        liveCatalog.refresh();
+        check(service.findProduct(800).getStockQty() == 0 && service.getAvailableStock(800) == 0,
+                "Physical and available stock both settle cleanly at 0 after dispatch");
+        check("Out of Stock".equals(liveCatalog.getValueAt(deskRow, 4)), "Status remains Out of Stock after dispatch");
 
         // Test Headless GUI Wiring
         if (!GraphicsEnvironment.isHeadless()) {

@@ -29,6 +29,8 @@ public class FreightPanel extends JPanel {
     private boolean technicalDetails = false;
 
     private JLabel lblActiveSort;
+    private JButton btnSortWeight;
+    private JButton btnSortSpeed;
     private JButton btnToggleOrder;
     private JTable tblFreight;
     private JLabel lblShipmentCount;
@@ -113,11 +115,13 @@ public class FreightPanel extends JPanel {
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btnBar.setOpaque(false);
 
-        JButton btnSortWeight = UiTheme.createPrimaryButton("Sort by Weight",
+        btnSortWeight = UiTheme.createToggleSortButton("Sort by Weight",
                 new UiTheme.VectorIcon(UiTheme.IconType.WEIGHT, 14),
+                true,
                 "Order packages by parcel weight using QuickSort");
-        JButton btnSortSpeed = UiTheme.createPrimaryButton("Sort by Delivery Speed",
+        btnSortSpeed = UiTheme.createToggleSortButton("Sort by Delivery Speed",
                 new UiTheme.VectorIcon(UiTheme.IconType.SPEED, 14),
+                false,
                 "Order packages by delivery urgency using InsertionSort");
         btnToggleOrder = UiTheme.createSecondaryButton("Lightest First", "Toggle sort direction");
 
@@ -166,6 +170,9 @@ public class FreightPanel extends JPanel {
     }
 
     private void updateToggleText() {
+        UiTheme.setToggleSortActive(btnSortWeight, currentMode == 1);
+        UiTheme.setToggleSortActive(btnSortSpeed, currentMode == 2);
+
         if (currentMode == 1) {
             btnToggleOrder.setText(ascending ? "Lightest First" : "Heaviest First");
             btnToggleOrder.setToolTipText("Toggle weight sort direction");
@@ -175,6 +182,11 @@ public class FreightPanel extends JPanel {
         } else {
             btnToggleOrder.setText(ascending ? "Ascending" : "Descending");
         }
+
+        FontMetrics fm = btnToggleOrder.getFontMetrics(UiTheme.FONT_BOLD);
+        int w = fm.stringWidth(btnToggleOrder.getText()) + 32;
+        btnToggleOrder.setPreferredSize(new Dimension(w, 36));
+        btnToggleOrder.revalidate();
     }
 
     private JScrollPane createTable() {
@@ -200,7 +212,7 @@ public class FreightPanel extends JPanel {
         });
 
         JScrollPane sp = UiTheme.createModernScrollPane(tblFreight);
-        sp.setBorder(new LineBorder(new Color(0xE5, 0xE7, 0xEB), 1));
+        sp.setBorder(new LineBorder(UiTheme.BORDER_CARD, 1));
         return sp;
     }
 
@@ -244,22 +256,22 @@ public class FreightPanel extends JPanel {
         if (currentMode == 1) {
             description = ascending ? "Lightest to Heaviest" : "Heaviest to Lightest";
             if (technicalDetails) {
-                algorithmDetails = " · Algorithm: QuickSort (Hoare Partition)";
+                algorithmDetails = " · QuickSort (Hoare)";
             }
         } else if (currentMode == 2) {
-            description = ascending ? "Fastest First (Express to Economy)" : "Slowest First (Economy to Express)";
+            description = ascending ? "Fastest First" : "Slowest First";
             if (technicalDetails) {
-                algorithmDetails = " · Algorithm: InsertionSort (Stable)";
+                algorithmDetails = " · InsertionSort (Stable)";
             }
         } else if (currentMode == 3) {
             description = ascending ? "Package No. (Ascending)" : "Package No. (Descending)";
             if (technicalDetails) {
-                algorithmDetails = " · Algorithm: QuickSort";
+                algorithmDetails = " · QuickSort";
             }
         } else {
             description = ascending ? "Destination (A to Z)" : "Destination (Z to A)";
             if (technicalDetails) {
-                algorithmDetails = " · Algorithm: InsertionSort";
+                algorithmDetails = " · InsertionSort";
             }
         }
 
