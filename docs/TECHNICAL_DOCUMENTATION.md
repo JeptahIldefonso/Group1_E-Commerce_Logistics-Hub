@@ -180,6 +180,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
+    Q([QuickSort low, high]) --> QC{low < high?}
+    QC -->|No| QE[Return]
+    QC -->|Yes| QP[Median-of-3 pivot + Hoare split at p]
+    QP --> QT{p - low < high - p?}
+    QT -->|Yes| QL[Recurse left; set low = p + 1] --> QC
+    QT -->|No| QR[Recurse right; set high = p] --> QC
+
     I([InsertionSort i = 1..count-1]) --> K[key = arr i ; j = i - 1]
     K --> C{j >= 0 and strict inversion vs key?}
     C -->|Yes| SH[arr j+1 = arr j ; j--] --> C
@@ -243,6 +250,13 @@ We wrote six standalone Java test programs. All of them compile with `javac --re
 | `ServiceTest` | Rules `BR-01` to `BR-09`, shipping that happens fully or not at all, not enough stock, safe undo (`BR-06`), and the tree staying untouched by sorting (`BR-09`). |
 | `FullSystemCheckupTest` | The empty starting queue, orders `#1001` and `#1002` through their full life, the Standing Desk reservation (`8` to `0` to `8` to `0`), and tables that cannot be edited and cache their data. |
 | `UltimatePerformanceTest` | Speed checks: 2 million queue operations, 2 million stack operations, 10,000 tree inserts with 100,000 lookups, QuickSort on 50,000 equal weights, and InsertionSort on 5,000 items. |
+
+```powershell
+javac --release 17 -encoding UTF-8 -d bin (Get-ChildItem -Recurse -Filter *.java src).FullName
+Select-String -Path (Get-ChildItem -Recurse -Filter *.java src).FullName `
+  -Pattern 'import\s+java\.(util|time|text)\.|DefaultTableModel|TableRowSorter|FlatLaf|MigLayout'
+# Result: 0 matches found — Zero Java Collections & Zero External Libraries verified.
+```
 
 ### 7.2 Our 10-minute defense plan
 
