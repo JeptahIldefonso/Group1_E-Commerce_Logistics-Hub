@@ -11,11 +11,6 @@ import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-/**
- * Modal dialog for registering a new product into the catalog.
- * Modern SaaS card popup matching Image 3 design.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class AddProductDialog extends JDialog {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
@@ -32,7 +27,7 @@ public class AddProductDialog extends JDialog {
         this.service = service;
         this.mainFrame = mainFrame;
 
-        setUndecorated(true); // Custom clean SaaS header border
+        setUndecorated(true);
         setSize(480, 460);
         setLocationRelativeTo(parent);
 
@@ -40,18 +35,14 @@ public class AddProductDialog extends JDialog {
         contentPane.setBackground(UiTheme.SURFACE);
         contentPane.setBorder(new LineBorder(new Color(0xD1, 0xD5, 0xDB), 1, true));
 
-        // 1. Header (Title + Close Button)
         contentPane.add(createHeader(), BorderLayout.NORTH);
 
-        // 2. Body Form
         contentPane.add(createBodyForm(), BorderLayout.CENTER);
 
-        // 3. Footer (Cancel + Add Product buttons)
         contentPane.add(createFooter(), BorderLayout.SOUTH);
 
         setContentPane(contentPane);
 
-        // Escape key to close
         getRootPane().registerKeyboardAction(
                 e -> dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
@@ -73,7 +64,6 @@ public class AddProductDialog extends JDialog {
                 new EmptyBorder(14, 18, 14, 18)
         ));
 
-        // Title with Icon
         JPanel titleBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titleBox.setOpaque(false);
 
@@ -86,7 +76,6 @@ public class AddProductDialog extends JDialog {
         titleBox.add(lblTitle);
         header.add(titleBox, BorderLayout.WEST);
 
-        // Close X button
         JButton btnClose = new JButton(new UiTheme.VectorIcon(UiTheme.IconType.CLOSE, 12, new Color(0x9C, 0xA3, 0xAF)));
         btnClose.setContentAreaFilled(false);
         btnClose.setBorderPainted(false);
@@ -128,19 +117,16 @@ public class AddProductDialog extends JDialog {
         txtPrice.addActionListener(e -> submit());
         txtStock.addActionListener(e -> submit());
 
-        // Row 0: Code
         g.gridy = 0; g.gridx = 0; g.weightx = 0.0;
         body.add(createFieldLabel("Product Code *", "Unique numeric ID"), g);
         g.gridy = 1; g.gridx = 0; g.weightx = 1.0;
         body.add(txtCode, g);
 
-        // Row 1: Name
         g.gridy = 2; g.gridx = 0; g.weightx = 0.0;
         body.add(createFieldLabel("Product Name / Description *", "Full item title"), g);
         g.gridy = 3; g.gridx = 0; g.weightx = 1.0;
         body.add(txtName, g);
 
-        // Row 2: Price & Stock
         JPanel rowPriceStock = new JPanel(new GridLayout(1, 2, 12, 0));
         rowPriceStock.setOpaque(false);
 
@@ -160,7 +146,6 @@ public class AddProductDialog extends JDialog {
         g.gridy = 4; g.gridx = 0; g.weightx = 1.0;
         body.add(rowPriceStock, g);
 
-        // Error message label
         lblError = new JLabel(" ");
         lblError.setFont(UiTheme.FONT_HINT);
         lblError.setForeground(UiTheme.DANGER_RED);

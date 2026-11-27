@@ -12,20 +12,13 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Tab 4: Shipments (Shipment Dispatch & Logistics).
- * Modern SaaS ERP layout:
- * Page header, action toolbar with quick sort buttons and direction toggle,
- * and clean borderless shipped packages table with column header click-to-sort.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class FreightPanel extends JPanel {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
     private final FreightTableModel freightTableModel;
 
     private boolean ascending = true;
-    private int currentMode = 1; // 1 = Weight, 2 = Delivery Speed, 3 = Package No, 4 = Destination
+    private int currentMode = 1;
     private boolean technicalDetails = false;
 
     private JLabel lblActiveSort;
@@ -44,10 +37,8 @@ public class FreightPanel extends JPanel {
         setBackground(UiTheme.BG_WINDOW);
         setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // 1. Page Header (Title + Subtitle)
         add(createPageHeader(), BorderLayout.NORTH);
 
-        // 2. Center Card (Toolbar + Table)
         JPanel centerCard = new JPanel(new BorderLayout(0, 10));
         centerCard.setBackground(UiTheme.SURFACE);
         centerCard.setBorder(new CompoundBorder(
@@ -99,7 +90,6 @@ public class FreightPanel extends JPanel {
         toolbar.setOpaque(false);
         toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
 
-        // Left: Active sort banner pill
         lblActiveSort = new JLabel();
         lblActiveSort.setFont(UiTheme.FONT_SUBTITLE);
         lblActiveSort.setOpaque(true);
@@ -111,7 +101,6 @@ public class FreightPanel extends JPanel {
         ));
         toolbar.add(lblActiveSort, BorderLayout.CENTER);
 
-        // Right: Sort buttons toolbar
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btnBar.setOpaque(false);
 
@@ -196,12 +185,12 @@ public class FreightPanel extends JPanel {
         tblFreight.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblFreight.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(100); // Package No.
-        colModel.getColumn(1).setPreferredWidth(85);  // Order No.
-        colModel.getColumn(2).setPreferredWidth(180); // Deliver To
-        colModel.getColumn(3).setPreferredWidth(110); // Weight
-        colModel.getColumn(4).setPreferredWidth(140); // Delivery Speed
-        colModel.getColumn(5).setPreferredWidth(95);  // Shipped #
+        colModel.getColumn(0).setPreferredWidth(100);
+        colModel.getColumn(1).setPreferredWidth(85);
+        colModel.getColumn(2).setPreferredWidth(180);
+        colModel.getColumn(3).setPreferredWidth(110);
+        colModel.getColumn(4).setPreferredWidth(140);
+        colModel.getColumn(5).setPreferredWidth(95);
 
         tblFreight.getTableHeader().addMouseListener(new MouseAdapter() {
             @Override

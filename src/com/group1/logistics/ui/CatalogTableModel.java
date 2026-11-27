@@ -6,12 +6,6 @@ import com.group1.logistics.service.FulfillmentService;
 
 import javax.swing.table.AbstractTableModel;
 
-/**
- * Custom AbstractTableModel backed by InventoryBST.inOrder() traversal.
- * Pre-computes formatted prices, lowercased search keys, net available stock
- * (physical stock minus pending queued orders), and KPI counts in one pass.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class CatalogTableModel extends AbstractTableModel {
     private final InventoryBST bst;
     private final FulfillmentService service;
@@ -94,9 +88,6 @@ public class CatalogTableModel extends AbstractTableModel {
         return 0;
     }
 
-    /**
-     * Zero-allocation O(n) name search against the already-cached lowercased product names.
-     */
     public int findRowByNameQuery(String lowerQuery) {
         if (cachedLowerNames == null || lowerQuery == null || lowerQuery.isEmpty()) {
             return -1;
@@ -109,9 +100,6 @@ public class CatalogTableModel extends AbstractTableModel {
         return -1;
     }
 
-    /**
-     * O(log n) binary search on the cached in-order sorted array by SKU ID to locate table row.
-     */
     public int findRowBySkuId(int skuId) {
         if (cachedProducts == null) {
             return -1;

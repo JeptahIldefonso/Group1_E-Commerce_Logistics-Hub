@@ -1,16 +1,12 @@
 package com.group1.logistics.models;
 
-/**
- * Domain model representing a customer order waiting in the FIFO dispatch queue.
- * Managed by OrderQueue.
- */
 public class Order {
     private int orderId;
     private String customerName;
     private int skuId;
     private int quantity;
     private String destination;
-    private int deliveryPriority; // 1 = Express, 2 = Priority, 3 = Standard, 4 = Economy, 5 = Bulk
+    private int deliveryPriority;
     private int sequenceNo;
 
     public Order(int orderId, String customerName, int skuId, int quantity, String destination, int deliveryPriority, int sequenceNo) {

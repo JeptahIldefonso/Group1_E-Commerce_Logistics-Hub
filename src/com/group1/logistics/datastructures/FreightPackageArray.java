@@ -2,11 +2,6 @@ package com.group1.logistics.datastructures;
 
 import com.group1.logistics.models.FreightPackage;
 
-/**
- * Custom primitive resizable dynamic array for FreightPackage.
- * Replaces java.util.ArrayList to comply with strict zero-collections rule.
- * Manually doubles capacity whenever full (initial capacity 16).
- */
 public class FreightPackageArray {
     private FreightPackage[] data;
     private int count;
@@ -23,10 +18,6 @@ public class FreightPackageArray {
         this.count = 0;
     }
 
-    /**
-     * Appends a FreightPackage to the dynamic array, manually doubling capacity if full.
-     * @param pkg the package to add.
-     */
     public void add(FreightPackage pkg) {
         if (pkg == null) {
             return;
@@ -55,16 +46,10 @@ public class FreightPackageArray {
         return count;
     }
 
-    /**
-     * Returns the internal backing array for in-place sorting over active range 0 .. count - 1.
-     */
     public FreightPackage[] rawArray() {
         return data;
     }
 
-    /**
-     * Returns a compacted primitive array containing only active elements (length == count).
-     */
     public FreightPackage[] toArray() {
         FreightPackage[] result = new FreightPackage[count];
         for (int i = 0; i < count; i++) {

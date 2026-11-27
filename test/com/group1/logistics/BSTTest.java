@@ -12,7 +12,6 @@ public class BSTTest {
         InventoryBST bst = new InventoryBST();
         assert bst.isEmpty() || bst.size() == 0 : "Initial BST size should be 0";
 
-        // Insert balanced 7-node tree (50, 30, 70, 20, 40, 60, 80)
         assert bst.insert(new Product(50, "Root Product", 100.0, 10));
         assert bst.insert(new Product(30, "P30", 50.0, 15));
         assert bst.insert(new Product(70, "P70", 150.0, 20));
@@ -24,16 +23,13 @@ public class BSTTest {
         assert bst.size() == 7 : "Size should be 7";
         assert bst.height() == 3 : "Height of balanced 7-node tree should be 3";
 
-        // Test duplicate rejection (BR-01)
         assert !bst.insert(new Product(50, "Duplicate", 99.0, 1)) : "Duplicate SKU should be rejected";
         assert bst.size() == 7 : "Size should remain 7 after rejected duplicate";
 
-        // Test search
         Product found = bst.search(40);
         assert found != null && found.getSkuId() == 40 && found.getName().equals("P40") : "Search for 40 failed";
         assert bst.search(999) == null : "Search for non-existent SKU should return null";
 
-        // Test In-Order Traversal (should be strictly ascending)
         Product[] inOrderArr = bst.inOrder();
         assert inOrderArr.length == 7 : "inOrder array length should equal size (7)";
         int[] expectedKeys = {20, 30, 40, 50, 60, 70, 80};
@@ -42,33 +38,25 @@ public class BSTTest {
         }
         System.out.println("  -> Recursive insert, search, and inOrder traversal: PASS");
 
-        // TEST CASE 1: Delete Leaf Node (20)
         assert bst.delete(20) : "Delete leaf 20 should succeed";
         assert bst.size() == 6 : "Size should be 6 after deleting leaf";
         assert bst.search(20) == null : "20 should no longer exist";
         assert bst.inOrder().length == 6 : "inOrder length should match size 6";
         System.out.println("  -> Deletion Case 1 (Leaf Node): PASS");
 
-        // TEST CASE 2: Delete Node with 1 Child
-        // Insert 25 under 30 (since 20 is gone, 30.left was null. 25 will be 30.left, so 30 has 2 children: 25 and 40).
-        // Let's delete 40 so 30 only has 25!
-        assert bst.delete(40) : "Delete 40 should succeed"; // 40 was a leaf
+        assert bst.delete(40) : "Delete 40 should succeed";
         assert bst.insert(new Product(25, "P25", 30.0, 4));
-        // Now 30 has ONLY left child (25). Let's delete 30 (Case 2: 1 child).
         assert bst.delete(30) : "Delete node with 1 child (30) should succeed";
         assert bst.size() == 5 : "Size should be 5";
         assert bst.search(30) == null;
         assert bst.search(25) != null : "Child 25 should still exist";
         System.out.println("  -> Deletion Case 2 (Node with 1 Child): PASS");
 
-        // TEST CASE 3: Delete Node with 2 Children (Root 50) with DOUBLE-DECREMENT GUARD!
-        // Tree currently has: 25, 50, 60, 70, 80. (50 has left=25, right=70).
         int prevSize = bst.size();
         assert bst.delete(50) : "Delete root 50 (2 children) should succeed";
         assert bst.size() == prevSize - 1 : "CRITICAL: Size must decrement exactly once (from " + prevSize + " to " + (prevSize - 1) + ", but got " + bst.size() + ")";
         assert bst.search(50) == null : "50 should be deleted";
 
-        // In-Order Successor of 50 was 60. Check that inOrder() does NOT throw ArrayIndexOutOfBoundsException!
         Product[] remaining = bst.inOrder();
         assert remaining.length == bst.size() : "inOrder length must match bst.size() (Trap 3 guard)";
         for (int i = 0; i < remaining.length - 1; i++) {

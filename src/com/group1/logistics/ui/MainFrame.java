@@ -11,13 +11,6 @@ import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 
-/**
- * Main application frame: Order & Shipping Manager.
- * Modern SaaS ERP layout (ElectronDB style):
- * Left side navigation bar (SidebarPanel), CardLayout central workspace,
- * and bottom subtle notification toast strip.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class MainFrame extends JFrame {
     private final FulfillmentService service;
 
@@ -45,12 +38,11 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1260, 780);
         setMinimumSize(new Dimension(1080, 680));
-        setLocationRelativeTo(null); // Center on screen
+        setLocationRelativeTo(null);
 
         getContentPane().setBackground(UiTheme.BG_WINDOW);
         setLayout(new BorderLayout(0, 0));
 
-        // 1. Center Content Area (CardLayout)
         this.cardLayout = new CardLayout();
         this.pnlContent = new JPanel(cardLayout);
         pnlContent.setBackground(UiTheme.BG_WINDOW);
@@ -67,11 +59,9 @@ public class MainFrame extends JFrame {
 
         add(pnlContent, BorderLayout.CENTER);
 
-        // 2. Left Sidebar Navigation
         this.sidebarPanel = new SidebarPanel(this);
         add(sidebarPanel, BorderLayout.WEST);
 
-        // 3. Bottom Feedback Notification Strip
         pnlFeedback = new JPanel(new BorderLayout(8, 0));
         pnlFeedback.setBackground(UiTheme.FEEDBACK_READY_BG);
         pnlFeedback.setBorder(new CompoundBorder(
@@ -86,7 +76,6 @@ public class MainFrame extends JFrame {
 
         add(pnlFeedback, BorderLayout.SOUTH);
 
-        // 4. Keyboard Shortcuts (Ctrl + 1..4)
         getRootPane().registerKeyboardAction(
                 e -> sidebarPanel.selectTab(0),
                 KeyStroke.getKeyStroke(KeyEvent.VK_1, InputEvent.CTRL_DOWN_MASK),
@@ -109,12 +98,9 @@ public class MainFrame extends JFrame {
         );
 
         refreshAll();
-        sidebarPanel.selectTab(1); // Default to Products tab
+        sidebarPanel.selectTab(1);
     }
 
-    /**
-     * Switches the active module view in the center CardLayout and refreshes its live data.
-     */
     public void showTab(int index) {
         if (cardLayout == null || pnlContent == null) {
             return;
@@ -145,17 +131,11 @@ public class MainFrame extends JFrame {
         freightPanel.setTechnicalDetails(enabled);
     }
 
-    /**
-     * Updates the message bar with the result of an operation.
-     */
     public void setFeedback(OpResult result) {
         if (result == null) return;
         setFeedback(result.isSuccess(), result.getMessage());
     }
 
-    /**
-     * Updates the message bar with custom status and message.
-     */
     public void setFeedback(boolean success, String message) {
         if (message == null || message.trim().isEmpty()) {
             pnlFeedback.setBackground(UiTheme.FEEDBACK_READY_BG);
@@ -174,9 +154,6 @@ public class MainFrame extends JFrame {
         pnlFeedback.repaint();
     }
 
-    /**
-     * Refreshes all table models, dynamic dropdowns, button states, and sidebar live count badges.
-     */
     public void refreshAll() {
         ordersPanel.refreshTables();
         catalogPanel.refreshTables();

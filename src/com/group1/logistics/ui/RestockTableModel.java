@@ -7,12 +7,6 @@ import com.group1.logistics.service.FulfillmentService;
 
 import javax.swing.table.AbstractTableModel;
 
-/**
- * Custom AbstractTableModel backed directly by RestockStack.
- * Displays audit log with newest entries on top (index 0).
- * Displays friendly product names and supports technical details toggling.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class RestockTableModel extends AbstractTableModel {
     private final RestockStack stack;
     private final FulfillmentService service;
@@ -51,7 +45,7 @@ public class RestockTableModel extends AbstractTableModel {
 
     @Override
     public Object getValueAt(int row, int col) {
-        RestockAction action = stack.get(row); // 0 is newest
+        RestockAction action = stack.get(row);
         if (action == null) {
             return "";
         }

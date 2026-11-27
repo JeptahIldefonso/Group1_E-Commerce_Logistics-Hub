@@ -12,10 +12,6 @@ import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-/**
- * Modal dialog for placing a new customer order into the FIFO queue.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class PlaceOrderDialog extends JDialog {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
@@ -53,13 +49,10 @@ public class PlaceOrderDialog extends JDialog {
         contentPane.setBackground(UiTheme.SURFACE);
         contentPane.setBorder(new LineBorder(new Color(0xD1, 0xD5, 0xDB), 1, true));
 
-        // 1. Header
         contentPane.add(createHeader(), BorderLayout.NORTH);
 
-        // 2. Body Form
         contentPane.add(createBodyForm(), BorderLayout.CENTER);
 
-        // 3. Footer
         contentPane.add(createFooter(), BorderLayout.SOUTH);
 
         setContentPane(contentPane);
@@ -125,7 +118,7 @@ public class PlaceOrderDialog extends JDialog {
 
         cmbDestination = new JComboBox<>(DESTINATIONS);
         cmbPriority = new JComboBox<>(DELIVERY_SPEEDS);
-        cmbPriority.setSelectedIndex(1); // Default to Standard
+        cmbPriority.setSelectedIndex(1);
 
         UiTheme.installFocusRing(txtCustomer);
         UiTheme.installFocusRing(txtQuantity);
@@ -139,19 +132,16 @@ public class PlaceOrderDialog extends JDialog {
         txtCustomer.addActionListener(e -> submit());
         txtQuantity.addActionListener(e -> submit());
 
-        // Row 0: Customer Name
         g.gridy = 0; g.gridx = 0; g.weightx = 1.0;
         body.add(createFieldLabel("Customer Name *", "Recipient full name"), g);
         g.gridy = 1; g.gridx = 0;
         body.add(txtCustomer, g);
 
-        // Row 1: Product Selection
         g.gridy = 2; g.gridx = 0;
         body.add(createFieldLabel("Product *", "Select item to order"), g);
         g.gridy = 3; g.gridx = 0;
         body.add(cmbProduct, g);
 
-        // Row 2: Quantity & Priority
         JPanel rowQtyPriority = new JPanel(new GridLayout(1, 2, 12, 0));
         rowQtyPriority.setOpaque(false);
 
@@ -171,13 +161,11 @@ public class PlaceOrderDialog extends JDialog {
         g.gridy = 4; g.gridx = 0;
         body.add(rowQtyPriority, g);
 
-        // Row 3: Destination
         g.gridy = 5; g.gridx = 0;
         body.add(createFieldLabel("Deliver To *", "Target warehouse hub"), g);
         g.gridy = 6; g.gridx = 0;
         body.add(cmbDestination, g);
 
-        // Error message label
         lblError = new JLabel(" ");
         lblError.setFont(UiTheme.FONT_HINT);
         lblError.setForeground(UiTheme.DANGER_RED);

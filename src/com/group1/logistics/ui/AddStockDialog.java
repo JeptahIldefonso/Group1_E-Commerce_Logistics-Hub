@@ -12,10 +12,6 @@ import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-/**
- * Modal dialog for restocking inventory items into the LIFO stack.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class AddStockDialog extends JDialog {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
@@ -38,13 +34,10 @@ public class AddStockDialog extends JDialog {
         contentPane.setBackground(UiTheme.SURFACE);
         contentPane.setBorder(new LineBorder(new Color(0xD1, 0xD5, 0xDB), 1, true));
 
-        // 1. Header
         contentPane.add(createHeader(), BorderLayout.NORTH);
 
-        // 2. Body Form
         contentPane.add(createBodyForm(), BorderLayout.CENTER);
 
-        // 3. Footer
         contentPane.add(createFooter(), BorderLayout.SOUTH);
 
         setContentPane(contentPane);
@@ -113,19 +106,16 @@ public class AddStockDialog extends JDialog {
         txtQuantity.setFont(UiTheme.FONT_REGULAR);
         txtQuantity.addActionListener(e -> submit());
 
-        // Row 0: Product
         g.gridy = 0; g.gridx = 0; g.weightx = 1.0;
         body.add(createFieldLabel("Product *", "Item to restock"), g);
         g.gridy = 1; g.gridx = 0;
         body.add(cmbProduct, g);
 
-        // Row 1: Quantity to Add
         g.gridy = 2; g.gridx = 0;
         body.add(createFieldLabel("Quantity to Add *", "Number of units"), g);
         g.gridy = 3; g.gridx = 0;
         body.add(txtQuantity, g);
 
-        // Error message label
         lblError = new JLabel(" ");
         lblError.setFont(UiTheme.FONT_HINT);
         lblError.setForeground(UiTheme.DANGER_RED);

@@ -12,19 +12,11 @@ import javax.swing.border.LineBorder;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
-/**
- * Tab 3: Restock (Inventory Restock Audit).
- * Modern SaaS ERP layout:
- * Page header, top action bar with "Undo Last Restock" and "+ Add Stock" modal trigger,
- * and clean borderless restock audit table with soft amber highlight for Row 0.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class RestockPanel extends JPanel {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
     private final RestockTableModel restockTableModel;
 
-    // Action button & cues
     private JButton btnAddStock;
     private JButton btnUndo;
     private JLabel lblLastRestockSummary;
@@ -40,10 +32,8 @@ public class RestockPanel extends JPanel {
         setBackground(UiTheme.BG_WINDOW);
         setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // 1. Page Header (Title + Subtitle)
         add(createPageHeader(), BorderLayout.NORTH);
 
-        // 2. Center Card (Toolbar + Table)
         JPanel centerCard = new JPanel(new BorderLayout(0, 10));
         centerCard.setBackground(UiTheme.SURFACE);
         centerCard.setBorder(new CompoundBorder(
@@ -93,7 +83,6 @@ public class RestockPanel extends JPanel {
         toolbar.setOpaque(false);
         toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
 
-        // Left: Last restock summary pill
         lblLastRestockSummary = new JLabel(" Last Restock: Loading...");
         lblLastRestockSummary.setFont(UiTheme.FONT_SUBTITLE);
         lblLastRestockSummary.setOpaque(true);
@@ -105,7 +94,6 @@ public class RestockPanel extends JPanel {
         ));
         toolbar.add(lblLastRestockSummary, BorderLayout.CENTER);
 
-        // Right: Undo button + "+ Add Stock" button
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btnBar.setOpaque(false);
 
@@ -133,10 +121,10 @@ public class RestockPanel extends JPanel {
         tblRestock.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblRestock.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(100); // Restock #
-        colModel.getColumn(1).setPreferredWidth(280); // Product
-        colModel.getColumn(2).setPreferredWidth(130); // Quantity Added
-        colModel.getColumn(3).setPreferredWidth(120); // Order of Entry
+        colModel.getColumn(0).setPreferredWidth(100);
+        colModel.getColumn(1).setPreferredWidth(280);
+        colModel.getColumn(2).setPreferredWidth(130);
+        colModel.getColumn(3).setPreferredWidth(120);
 
         JScrollPane sp = UiTheme.createModernScrollPane(tblRestock);
         sp.setBorder(new LineBorder(UiTheme.BORDER_CARD, 1));

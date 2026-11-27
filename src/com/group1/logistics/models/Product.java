@@ -1,10 +1,5 @@
 package com.group1.logistics.models;
 
-/**
- * Domain model representing a product in the warehouse catalog.
- * Stored in InventoryBST and keyed by unique numeric skuId.
- * Enforces BR-04 (stockQty is never negative).
- */
 public class Product {
     private int skuId;
     private String name;
@@ -58,21 +53,12 @@ public class Product {
         return stockQty;
     }
 
-    /**
-     * Safely increases stock quantity.
-     * @param amount units to add (must be > 0).
-     */
     public void addStock(int amount) {
         if (amount > 0) {
             this.stockQty += amount;
         }
     }
 
-    /**
-     * Safely decreases stock quantity, preventing negative stock (BR-04).
-     * @param amount units to deduct.
-     * @return true if deduction succeeded, false if insufficient stock.
-     */
     public boolean removeStock(int amount) {
         if (amount > 0 && this.stockQty >= amount) {
             this.stockQty -= amount;

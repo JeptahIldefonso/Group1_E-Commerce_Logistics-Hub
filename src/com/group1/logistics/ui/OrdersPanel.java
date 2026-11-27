@@ -12,19 +12,11 @@ import javax.swing.border.LineBorder;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
-/**
- * Tab 1: Orders (Order Fulfillment).
- * Modern SaaS ERP layout:
- * Page header, top action bar with "Ship Next", "Cancel Next", and "+ Place Order" modal trigger,
- * and clean borderless waiting orders table with NEXT badge for Row 0.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class OrdersPanel extends JPanel {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
     private final QueueTableModel queueTableModel;
 
-    // Action buttons & cues
     private JButton btnPlaceOrder;
     private JButton btnShipNext;
     private JButton btnCancelNext;
@@ -70,10 +62,8 @@ public class OrdersPanel extends JPanel {
         setBackground(UiTheme.BG_WINDOW);
         setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // 1. Page Header (Title + Subtitle)
         add(createPageHeader(), BorderLayout.NORTH);
 
-        // 2. Center Card (Toolbar + Table)
         JPanel centerCard = new JPanel(new BorderLayout(0, 10));
         centerCard.setBackground(UiTheme.SURFACE);
         centerCard.setBorder(new CompoundBorder(
@@ -119,7 +109,6 @@ public class OrdersPanel extends JPanel {
         toolbar.setOpaque(false);
         toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
 
-        // Left: Next order summary pill
         lblNextOrderSummary = new JLabel(" Next order: Loading...");
         lblNextOrderSummary.setFont(UiTheme.FONT_SUBTITLE);
         lblNextOrderSummary.setOpaque(true);
@@ -131,7 +120,6 @@ public class OrdersPanel extends JPanel {
         ));
         toolbar.add(lblNextOrderSummary, BorderLayout.CENTER);
 
-        // Right: Action buttons
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btnBar.setOpaque(false);
 
@@ -165,13 +153,13 @@ public class OrdersPanel extends JPanel {
         tblOrders.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblOrders.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(55);  // # (NEXT)
-        colModel.getColumn(1).setPreferredWidth(80);  // Order No.
-        colModel.getColumn(2).setPreferredWidth(170); // Customer Name
-        colModel.getColumn(3).setPreferredWidth(220); // Product
-        colModel.getColumn(4).setPreferredWidth(60);  // Qty
-        colModel.getColumn(5).setPreferredWidth(170); // Deliver To
-        colModel.getColumn(6).setPreferredWidth(140); // Delivery Speed
+        colModel.getColumn(0).setPreferredWidth(55);
+        colModel.getColumn(1).setPreferredWidth(80);
+        colModel.getColumn(2).setPreferredWidth(170);
+        colModel.getColumn(3).setPreferredWidth(220);
+        colModel.getColumn(4).setPreferredWidth(60);
+        colModel.getColumn(5).setPreferredWidth(170);
+        colModel.getColumn(6).setPreferredWidth(140);
 
         JScrollPane sp = UiTheme.createModernScrollPane(tblOrders);
         sp.setBorder(new LineBorder(UiTheme.BORDER_CARD, 1));

@@ -13,26 +13,17 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 
-/**
- * Tab 2: Product Management.
- * SaaS ERP layout matching Image 1:
- * Page header, filter pills, search input, "+ Add Product" modal trigger,
- * and borderless modern table with rounded status pills.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class CatalogPanel extends JPanel {
     private final FulfillmentService service;
     private final MainFrame mainFrame;
     private final CatalogTableModel catalogTableModel;
     private boolean technicalDetails = false;
 
-    // Search and Action controls
     private JTextField txtSearch;
     private JButton btnAddProduct;
     private JButton btnDeleteProduct;
     private JLabel lblTreeHeightBadge;
 
-    // Filter pills
     private JLabel lblPillAll;
     private JLabel lblPillHealthy;
     private JLabel lblPillAttention;
@@ -51,10 +42,8 @@ public class CatalogPanel extends JPanel {
         setBackground(UiTheme.BG_WINDOW);
         setBorder(new EmptyBorder(16, 20, 16, 20));
 
-        // 1. Page Header (Title, Subtitle & Tech Badge)
         add(createPageHeader(), BorderLayout.NORTH);
 
-        // 2. Center Content (Toolbar + Table Card)
         JPanel centerCard = new JPanel(new BorderLayout(0, 10));
         centerCard.setBackground(UiTheme.SURFACE);
         centerCard.setBorder(new CompoundBorder(
@@ -104,7 +93,6 @@ public class CatalogPanel extends JPanel {
         leftBox.add(lblSubtitle);
         header.add(leftBox, BorderLayout.WEST);
 
-        // Technical details badge (Right)
         lblTreeHeightBadge = new JLabel();
         lblTreeHeightBadge.setFont(UiTheme.FONT_BADGE);
         lblTreeHeightBadge.setOpaque(true);
@@ -125,7 +113,6 @@ public class CatalogPanel extends JPanel {
         toolbar.setOpaque(false);
         toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
 
-        // Left: Filter Pills
         JPanel pnlPills = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         pnlPills.setOpaque(false);
 
@@ -138,7 +125,6 @@ public class CatalogPanel extends JPanel {
         pnlPills.add(lblPillAttention);
         toolbar.add(pnlPills, BorderLayout.WEST);
 
-        // Right: Search Input + "+ Add Product" + "Delete"
         JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightBox.setOpaque(false);
 
@@ -147,7 +133,6 @@ public class CatalogPanel extends JPanel {
         txtSearch.setToolTipText("Search products by code or name (instant live highlight or press Enter)");
         UiTheme.installFocusRing(txtSearch);
 
-        // Debounced live search (250ms after typing stops; instant keystroke response)
         searchDebounceTimer = new Timer(250, e -> {
             String q = txtSearch.getText().trim();
             if (!q.isEmpty()) {
@@ -233,13 +218,12 @@ public class CatalogPanel extends JPanel {
         tblCatalog.setFillsViewportHeight(true);
 
         TableColumnModel colModel = tblCatalog.getColumnModel();
-        colModel.getColumn(0).setPreferredWidth(95);  // PROD CODE
-        colModel.getColumn(1).setPreferredWidth(280); // PRODUCT NAME
-        colModel.getColumn(2).setPreferredWidth(120); // PRICE
-        colModel.getColumn(3).setPreferredWidth(100); // IN STOCK
-        colModel.getColumn(4).setPreferredWidth(120); // STATUS
+        colModel.getColumn(0).setPreferredWidth(95);
+        colModel.getColumn(1).setPreferredWidth(280);
+        colModel.getColumn(2).setPreferredWidth(120);
+        colModel.getColumn(3).setPreferredWidth(100);
+        colModel.getColumn(4).setPreferredWidth(120);
 
-        // Rounded pill status renderer on column 4
         colModel.getColumn(4).setCellRenderer(new UiTheme.StatusPillRenderer());
 
         tblCatalog.getSelectionModel().addListSelectionListener(e -> {
@@ -320,7 +304,6 @@ public class CatalogPanel extends JPanel {
         int matchedRow = -1;
         Product product = null;
 
-        // 1. Try O(log n) numeric SKU lookup first via BST + binary row search
         try {
             int skuId = Integer.parseInt(query);
             product = service.findProduct(skuId);
@@ -328,10 +311,8 @@ public class CatalogPanel extends JPanel {
                 matchedRow = catalogTableModel.findRowBySkuId(skuId);
             }
         } catch (NumberFormatException ignored) {
-            // Fall through to cached name lookup
         }
 
-        // 2. Zero-allocation search against cached lowercased product names
         if (product == null) {
             matchedRow = catalogTableModel.findRowByNameQuery(query.toLowerCase());
             if (matchedRow >= 0) {

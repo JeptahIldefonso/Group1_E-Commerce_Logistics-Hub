@@ -1,9 +1,5 @@
 package com.group1.logistics.models;
 
-/**
- * Domain model representing an inventory restock transaction.
- * Stored in RestockStack (LIFO) to support atomic rollback via Safe Undo (BR-06).
- */
 public class RestockAction {
     private int actionId;
     private int skuId;

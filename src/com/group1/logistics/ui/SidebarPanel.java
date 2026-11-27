@@ -8,11 +8,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-/**
- * Modern dark left navigation sidebar matching SaaS ERP layout (ElectronDB style).
- * Width: 220px fixed.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class SidebarPanel extends JPanel {
     private final MainFrame mainFrame;
     private int activeIndex = 0;
@@ -86,7 +81,6 @@ public class SidebarPanel extends JPanel {
             if (active) {
                 g2.setColor(UiTheme.SIDEBAR_ACTIVE);
                 g2.fillRoundRect(8, 2, w - 16, h - 4, 6, 6);
-                // Active blue accent strip on left
                 g2.setColor(UiTheme.SIDEBAR_ACCENT);
                 g2.fillRoundRect(8, 6, 4, h - 12, 2, 2);
             } else if (hover) {
@@ -94,7 +88,6 @@ public class SidebarPanel extends JPanel {
                 g2.fillRoundRect(8, 2, w - 16, h - 4, 6, 6);
             }
 
-            // Draw Icon
             Color itemFg = active ? UiTheme.SIDEBAR_TEXT_ACTIVE : UiTheme.SIDEBAR_TEXT;
             setForeground(itemFg);
             int iconX = 22;
@@ -103,7 +96,6 @@ public class SidebarPanel extends JPanel {
                 icon.paintIcon(this, g2, iconX, iconY);
             }
 
-            // Draw Title Text
             g2.setFont(active ? UiTheme.FONT_SIDEBAR_ITEM_ACTIVE : UiTheme.FONT_SIDEBAR_ITEM);
             g2.setColor(itemFg);
             FontMetrics fm = g2.getFontMetrics();
@@ -111,7 +103,6 @@ public class SidebarPanel extends JPanel {
             int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
             g2.drawString(title, textX, textY);
 
-            // Draw Live Count Badge Pill (on the right)
             String badgeText = String.valueOf(count);
             g2.setFont(UiTheme.FONT_BADGE);
             FontMetrics bfm = g2.getFontMetrics();
@@ -145,12 +136,10 @@ public class SidebarPanel extends JPanel {
         setBorder(new MatteBorder(0, 0, 0, 1, UiTheme.SIDEBAR_BORDER));
         setLayout(new BorderLayout(0, 0));
 
-        // 1. Top Section: Brand + Module Navigation
         JPanel topContainer = new JPanel();
         topContainer.setOpaque(false);
         topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
 
-        // Brand Banner
         JPanel brandBox = new JPanel(new GridBagLayout());
         brandBox.setOpaque(false);
         brandBox.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -201,7 +190,6 @@ public class SidebarPanel extends JPanel {
         brandBox.add(brandText, bgc);
         topContainer.add(brandBox);
 
-        // Section Label: MODULES
         JPanel catBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 4));
         catBox.setOpaque(false);
         catBox.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -212,7 +200,6 @@ public class SidebarPanel extends JPanel {
         catBox.add(lblCat);
         topContainer.add(catBox);
 
-        // Nav Buttons (inherit dynamic active/inactive foreground color)
         btnOrders = new NavItemBtn("Orders", new UiTheme.VectorIcon(UiTheme.IconType.SHIP, 14), () -> selectTab(0));
         btnProducts = new NavItemBtn("Products", new UiTheme.VectorIcon(UiTheme.IconType.BOX, 14), () -> selectTab(1));
         btnRestock = new NavItemBtn("Restock", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), () -> selectTab(2));
@@ -228,7 +215,6 @@ public class SidebarPanel extends JPanel {
 
         add(topContainer, BorderLayout.NORTH);
 
-        // 2. Bottom Section: Technical Toggle + Operator Info
         JPanel bottomContainer = new JPanel();
         bottomContainer.setOpaque(false);
         bottomContainer.setLayout(new BoxLayout(bottomContainer, BoxLayout.Y_AXIS));
