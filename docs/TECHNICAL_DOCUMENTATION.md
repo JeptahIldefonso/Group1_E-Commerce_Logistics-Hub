@@ -32,7 +32,7 @@ Without organized data structures behind a warehouse screen, everyday mistakes h
 - **Unorganized delivery loading:** Delivery vans need parcels arranged quickly by **parcel weight** (heavy boxes at the bottom) or **delivery speed** (Express boxes loaded first while preserving original arrival order among ties).
 
 ### 1.3 Strict Technical Rules Satisfied
-To demonstrate foundational Data Structures & Algorithms mastery under [`FINAL-Project-Guide (1).pdf`](DocsGuidelines/FINAL-Project-Guide%20(1).pdf):
+To demonstrate foundational Data Structures & Algorithms mastery under [`FINAL-Project-Guide (1).pdf`](guidelines/FINAL-Project-Guide%20(1).pdf):
 1. **Java 17 LTS strictly** (`javac --release 17`).
 2. **Zero external libraries:** No FlatLaf, MigLayout, Maven/Gradle, JUnit, or third-party JARs.
 3. **Zero Java Collections Framework:** Zero imports of `java.util.*`, `java.time.*`, or `java.text.*` in `src/`. All ADTs (`OrderQueue`, `RestockStack`, `InventoryBST`, `FreightPackageArray`) and sorting algorithms (`QuickSort`, `InsertionSort`) are built from scratch using primitive arrays and object node references.
