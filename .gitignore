@@ -1,6 +1,8 @@
 # Compiled class files
 bin/
+bin-test/
 build/
+dist/
 *.class
 
 # Package files
@@ -11,6 +13,7 @@ build/
 *.zip
 *.tar.gz
 *.rar
+submission/
 
 # NetBeans private configurations
 nbproject/private/
@@ -20,6 +23,7 @@ nbproject/private/
 *.iml
 out/
 
-# OS generated files
+# OS and Office temp lock files
 .DS_Store
 Thumbs.db
+~$*

@@ -2,7 +2,7 @@
 **BSIS 2nd Year — Data Structures & Algorithms | 3-Week Final Laboratory Project**  
 *Java 17 LTS · Desktop Swing GUI (IntelliJ UI Designer / NetBeans) · Primitive Custom Data Structures · Standalone Executable JAR*
 
-> **Document Status: Solo Architecture & Engineering Contract.** This `README.md` serves as the **single source of truth** for class names, package architecture, method contracts, business rules, compliance standards, and defense expectations. Scope items are tagged **[MUST]**, **[SHOULD]**, or **[COULD]**. Complete test cases and run logs live in `TEST_PLAN.md`.
+> **Document Status: Architecture & Engineering Contract.** This `README.md` serves as the overview and contract for class names, package architecture, business rules, compliance standards, and defense expectations. Full technical guide, diagrams, flowcharts, and user manual live in [`docs/TECHNICAL_DOCUMENTATION.md`](docs/TECHNICAL_DOCUMENTATION.md) and [`docs/LogisticsHub-Documentation.pdf`](docs/LogisticsHub-Documentation.pdf).
 
 ---
 
@@ -10,12 +10,12 @@
 
 | Rubric Category | Weight | Target Implementation | Verification Artifact |
 | :--- | :---: | :--- | :--- |
-| **Desktop GUI & Usability** | 15 pts | 3-tab Swing desktop interface; non-editable `AbstractTableModel` tables; live status bar; friendly `JOptionPane` input validation dialogs | `MainFrame`, 3 tab panels, `TC-G01..G09`, `TC-V01..V06` |
-| **Linear ADTs (Queue & Stack)** | 20 pts | Primitive circular array `OrderQueue` (FIFO order dispatch) and primitive array `RestockStack` (LIFO restock history + safe Undo); zero Java Collections | `OrderQueue`, `RestockStack`, `LinearADTTest`, `TC-Q01..Q10`, `TC-ST01..ST08` |
-| **Hierarchical BST Indexing** | 25 pts | Custom `SKUNode` + `InventoryBST` keyed by numeric `skuId`: recursive insertion, target search, in-order catalog display, and complete 3-case deletion (Leaf, 1 Child, 2 Children via In-Order Successor) | `Product`, `SKUNode`, `InventoryBST`, `BSTTest`, `TC-B01..B21` |
-| **Custom Sorting Engine** | 15 pts | Two distinct custom sorters from scratch: **QuickSort** by Weight (kg) and **InsertionSort** by Delivery Priority, wired to buttons and dynamic column-header clicks | `QuickSort`, `InsertionSort`, `FreightPackageArray`, `SortTest`, `TC-SO01..SO13` |
-| **Executable JAR & Code Quality** | 15 pts | Double-clickable standalone `.jar` targeting Java 17 (`major version: 61`); modular 3-tier OOP architecture; comprehensive Javadoc/inline comments; zero prohibited imports | `dist/LogisticsHub.jar`, `COMP-01..COMP-06` |
-| **Documentation & Live Defense** | 10 pts | Technical Documentation PDF (System Overview, UML Class Diagrams, Algorithm Flowcharts, User Guide) + rehearsed 10-minute solo live system demonstration and Q&A | `Group1_Technical_Documentation.pdf`, `COMP-07`, §9 Defense Script |
+| **Desktop GUI & Usability** | 15 pts | 4-tab SaaS App Shell Swing interface; non-editable `AbstractTableModel` tables; live status bar; inline & `JOptionPane` validation dialogs | `MainFrame`, 4 tab panels, `FullSystemCheckupTest` |
+| **Linear ADTs (Queue & Stack)** | 20 pts | Primitive circular array `OrderQueue` (FIFO order dispatch) and primitive array `RestockStack` (LIFO restock history + safe Undo); zero Java Collections | `OrderQueue`, `RestockStack`, `LinearADTTest` |
+| **Hierarchical BST Indexing** | 25 pts | Custom `SKUNode` + `InventoryBST` keyed by numeric `skuId`: recursive insertion, target search, in-order catalog display, and complete 3-case deletion (Leaf, 1 Child, 2 Children via In-Order Successor) | `Product`, `SKUNode`, `InventoryBST`, `BSTTest` |
+| **Custom Sorting Engine** | 15 pts | Two distinct custom sorters from scratch: **QuickSort** by Weight (kg) and **InsertionSort** by Delivery Priority, wired to buttons and dynamic column-header clicks | `QuickSort`, `InsertionSort`, `FreightPackageArray`, `SortTest` |
+| **Executable JAR & Code Quality** | 15 pts | Double-clickable standalone `.jar` targeting Java 17 (`major version: 61`); modular 3-tier OOP architecture; Javadoc/inline comments; zero prohibited imports | `LogisticsHub.jar`, compliance scan, `UltimatePerformanceTest` |
+| **Documentation & Live Defense** | 10 pts | Technical Documentation PDF (System Overview, UML Class Diagrams, 5 Algorithm Flowcharts, User Guide) + rehearsed 10-minute live team demonstration and Q&A | `docs/LogisticsHub-Documentation.pdf`, `docs/TECHNICAL_DOCUMENTATION.md`, §9 Defense Script |
 
 ---
 
@@ -354,18 +354,18 @@ flowchart TD
   - Add optional pipe-delimited CSV `FileStore` with balanced seed data.
   - Run the PowerShell `COMP-01` compliance scan to verify zero prohibited imports.
   - Export and test `LogisticsHub.jar` on a clean PC without an IDE.
-  - Export `Group1_Technical_Documentation.pdf` and rehearse the 10-minute solo presentation.
+  - Export [`docs/LogisticsHub-Documentation.pdf`](docs/LogisticsHub-Documentation.pdf) and rehearse the 10-minute presentation.
 
 ---
 
 ## 9. Submission Checklist & Solo Defense Script
 
 ### 9.1 Final Submission Package (NEU-VLE)
-- [ ] **Executable JAR (`LogisticsHub.jar`):** Verified Java 17 (`major version: 61`); double-clicks cleanly on a separate PC with no IDE open.
-- [ ] **Source Code Archive (`Group1_SourceCode.zip`):** Contains full project folder including all `.java` files, GUI forms, and project configuration; fresh extract builds cleanly.
-- [ ] **Technical Documentation (`Group1_Technical_Documentation.pdf`):** Contains System Overview, `BR-01` duplicate-SKU note, UML Class Diagrams, 4 Algorithm Flowcharts (Dispatch, Restock/Undo, 3-Case BST Deletion, QuickSort Partitioning), and User Guide with `₱` screenshots.
-- [ ] **Compliance Audit Passed:** PowerShell `COMP-01` scan returns zero prohibited imports or `RowSorter` references.
-- [ ] **Upload Verified:** Final zip uploaded to NEU-VLE, re-downloaded, extracted, and launched successfully.
+- [x] **Executable JAR (`LogisticsHub.jar`):** Verified Java 17 (`major version: 61`); double-clicks cleanly with no IDE open.
+- [x] **Source Code Archive (`LogisticsHub-Source-Code.zip`):** Contains `src/`, `test/`, and `DSAjava.iml`; clean compile & test execution verified.
+- [x] **Technical Documentation ([`docs/LogisticsHub-Documentation.pdf`](docs/LogisticsHub-Documentation.pdf)):** Contains System Overview, `BR-01` duplicate-SKU note, UML Class Diagram, 5 Algorithm Flowcharts (Dispatch, Restock/Undo, 3-Case BST Deletion, QuickSort Partitioning, Stable InsertionSort), and User Guide with `₱` screenshots.
+- [x] **Compliance Audit Passed:** Regex scan returns zero prohibited imports or `TableRowSorter` / `DefaultTableModel` usages.
+- [ ] **Upload Verified:** Upload final package to NEU-VLE and test `.jar` launch on a teammate's PC.
 
 ### 9.2 10-Minute Solo Live Defense Script
 
