@@ -1,9 +1,5 @@
 package com.group1.logistics.models;
 
-/**
- * Domain model representing a dispatched parcel ready for shipping.
- * Stored in FreightPackageArray and sorted by QuickSort (weight) or InsertionSort (priority).
- */
 public class FreightPackage {
     private int packageId;
     private int orderId;

@@ -2,11 +2,6 @@ package com.group1.logistics.datastructures;
 
 import com.group1.logistics.models.Order;
 
-/**
- * Concrete primitive circular array queue (FIFO).
- * Complies with strict project constraints: Zero Java Collections Framework.
- * Reuses freed slots with modulo arithmetic: (index + 1) % capacity.
- */
 public class OrderQueue {
     private Order[] elements;
     private int front;
@@ -25,11 +20,6 @@ public class OrderQueue {
         this.count = 0;
     }
 
-    /**
-     * Adds an order to the rear of the queue (FIFO).
-     * @param order the order to enqueue.
-     * @return true if enqueued successfully, false if null or queue is full.
-     */
     public boolean enqueue(Order order) {
         if (order == null || isFull()) {
             return false;
@@ -40,25 +30,17 @@ public class OrderQueue {
         return true;
     }
 
-    /**
-     * Removes and returns the order at the front of the queue.
-     * Sets vacated array slot to null for memory hygiene.
-     * @return the front order, or null if empty.
-     */
     public Order dequeue() {
         if (isEmpty()) {
             return null;
         }
         Order removed = elements[front];
-        elements[front] = null; // Clean up reference
+        elements[front] = null;
         front = (front + 1) % capacity;
         count--;
         return removed;
     }
 
-    /**
-     * Returns the front order without removing it.
-     */
     public Order peek() {
         if (isEmpty()) {
             return null;
@@ -66,10 +48,6 @@ public class OrderQueue {
         return elements[front];
     }
 
-    /**
-     * Returns the order at the given logical FIFO index (0 = front, count-1 = newest).
-     * Preserves logical ordering across wrap-arounds (TC-Q06).
-     */
     public Order get(int logicalIndex) {
         if (logicalIndex < 0 || logicalIndex >= count) {
             return null;
@@ -94,9 +72,6 @@ public class OrderQueue {
         return count == capacity;
     }
 
-    /**
-     * Returns a snapshot array in logical FIFO order.
-     */
     public Order[] toArray() {
         Order[] snapshot = new Order[count];
         for (int i = 0; i < count; i++) {

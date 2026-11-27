@@ -14,14 +14,7 @@ import com.group1.logistics.sorting.InsertionSort;
 import com.group1.logistics.sorting.PackageCriteria;
 import com.group1.logistics.sorting.QuickSort;
 
-/**
- * Ultimate Performance, Scalability & Functional Stress Benchmark Suite.
- * Measures execution latency, memory bounds, stack recursion depth, and business rule compliance.
- * Complies strictly with course constraints: Zero Java Collections, Zero java.util.Random, Zero java.time.
- */
 public class UltimatePerformanceTest {
-
-    // Custom LCG Pseudorandom Generator (replaces java.util.Random)
     private static long lcgSeed = 123456789L;
 
     private static int nextRandomInt(int min, int max) {
@@ -51,15 +44,11 @@ public class UltimatePerformanceTest {
         System.out.println("================================================================================");
     }
 
-    /**
-     * Benchmark 1: Circular Queue & Array Stack 1,000,000 Operations
-     */
     private static void testLinearADTsPerformance() {
         System.out.println("--- [TEST 1] LINEAR ADTs: THROUGHPUT & LATENCY BENCHMARK ---");
 
         int iterations = 1_000_000;
 
-        // 1. OrderQueue 1M Enqueue/Dequeue operations (testing circular wrap-around)
         OrderQueue queue = new OrderQueue(100);
         long startQueue = System.nanoTime();
 
@@ -79,7 +68,6 @@ public class UltimatePerformanceTest {
                 iterations * 2, elapsedQueueMs, nsPerQueueOp);
         assert elapsedQueueMs < 500 : "Queue operations exceeded latency threshold";
 
-        // 2. RestockStack 1M Push/Pop operations
         RestockStack stack = new RestockStack(100);
         long startStack = System.nanoTime();
 
@@ -100,19 +88,14 @@ public class UltimatePerformanceTest {
         assert elapsedStackMs < 500 : "Stack operations exceeded latency threshold";
     }
 
-    /**
-     * Benchmark 2: Hierarchical BST Scalability & 3-Case Deletion
-     */
     private static void testHierarchicalBSTPerformance() {
         System.out.println("\n--- [TEST 2] HIERARCHICAL BST: SCALABILITY & 3-CASE DELETION BENCHMARK ---");
 
         InventoryBST bst = new InventoryBST();
         int nodeCount = 10_000;
 
-        // 1. Recursive Insert Benchmark (10,000 unique SKUs)
         long startInsert = System.nanoTime();
         for (int i = 1; i <= nodeCount; i++) {
-            // Distribute keys to build a balanced-like tree
             int sku = ((i * 37) % 50_000) + 1;
             bst.insert(new Product(sku, "Product_" + sku, 100.0, 50));
         }
@@ -121,7 +104,6 @@ public class UltimatePerformanceTest {
         System.out.printf("  ✓ BST Insert: Built tree with %d nodes in %.2f ms (Tree Height: %d)\n",
                 bst.size(), elapsedInsertMs, bst.height());
 
-        // 2. Search Benchmark (100,000 lookups)
         int lookups = 100_000;
         long startSearch = System.nanoTime();
         int foundCount = 0;
@@ -136,7 +118,6 @@ public class UltimatePerformanceTest {
         System.out.printf("  ✓ BST Search: %,d lookups in %.2f ms (%.2f ns/search, %,d hits) [O(log n)]\n",
                 lookups, elapsedSearchMs, nsPerLookup, foundCount);
 
-        // 3. In-Order Traversal Benchmark
         long startInOrder = System.nanoTime();
         Product[] sorted = bst.inOrder();
         long endInOrder = System.nanoTime();
@@ -149,7 +130,6 @@ public class UltimatePerformanceTest {
         System.out.printf("  ✓ BST In-Order Traversal: %,d elements verified strictly sorted in %.2f ms [O(n)]\n",
                 sorted.length, elapsedInOrderMs);
 
-        // 4. Exhaustive 3-Case Deletion Stress Test
         int initialSize = bst.size();
         int deleteCount = Math.min(1000, initialSize / 2);
         long startDelete = System.nanoTime();
@@ -167,13 +147,9 @@ public class UltimatePerformanceTest {
                 deleteCount, elapsedDeleteMs, initialSize, bst.size());
     }
 
-    /**
-     * Benchmark 3: QuickSort & InsertionSort Scalability & Stress Tests
-     */
     private static void testSortingEnginePerformance() {
         System.out.println("\n--- [TEST 3] SORTING ENGINE: SCALABILITY & EXTREME STRESS BENCHMARK ---");
 
-        // 1. QuickSort 20,000 Random Items
         int countRandom = 20_000;
         FreightPackageArray arrayRandom = new FreightPackageArray(countRandom);
         for (int i = 0; i < countRandom; i++) {
@@ -185,14 +161,12 @@ public class UltimatePerformanceTest {
         long endQs = System.nanoTime();
         double elapsedQsMs = (endQs - startQs) / 1_000_000.0;
 
-        // Verify sorted
         for (int i = 0; i < arrayRandom.size() - 1; i++) {
             assert arrayRandom.get(i).getWeightKg() <= arrayRandom.get(i + 1).getWeightKg() : "QuickSort order broken";
         }
         System.out.printf("  ✓ QuickSort (Weight): Sorted %,d random parcels in %.2f ms [O(n log n)]\n",
                 countRandom, elapsedQsMs);
 
-        // 2. EXTREME STRESS TEST: QuickSort on 50,000 Identical Elements (Lomuto Trap 1)
         int countIdentical = 50_000;
         FreightPackageArray arrayIdentical = new FreightPackageArray(countIdentical);
         for (int i = 0; i < countIdentical; i++) {
@@ -207,7 +181,6 @@ public class UltimatePerformanceTest {
         System.out.printf("  ✓ QuickSort Hoare Guard: %,d identical items sorted in %.2f ms (Zero Stack Overflow!)\n",
                 countIdentical, elapsedQsStressMs);
 
-        // 3. InsertionSort 5,000 Items & Strict FIFO Stability Check (Trap 2)
         int countInsertion = 5_000;
         FreightPackageArray arrayInsert = new FreightPackageArray(countInsertion);
         for (int i = 0; i < countInsertion; i++) {
@@ -220,7 +193,6 @@ public class UltimatePerformanceTest {
         long endIs = System.nanoTime();
         double elapsedIsMs = (endIs - startIs) / 1_000_000.0;
 
-        // Verify sorting & stability
         for (int i = 0; i < arrayInsert.size() - 1; i++) {
             FreightPackage a = arrayInsert.get(i);
             FreightPackage b = arrayInsert.get(i + 1);
@@ -233,9 +205,6 @@ public class UltimatePerformanceTest {
                 countInsertion, elapsedIsMs);
     }
 
-    /**
-     * Benchmark 4: Service Layer End-to-End Simulation of 1,000 Warehouse Transactions
-     */
     private static void testServiceEndToEndStress() {
         System.out.println("\n--- [TEST 4] SERVICE LAYER: END-TO-END WAREHOUSE TRANSACTIONS ---");
 
@@ -245,37 +214,30 @@ public class UltimatePerformanceTest {
 
         long startService = System.nanoTime();
 
-        // 1. Enqueue 10 valid orders
         for (int i = 1; i <= 10; i++) {
             OpResult res = service.enqueueOrder("Customer_" + i, 300, 1, "Manila", 1);
             assert res.isSuccess() : "Failed to enqueue order: " + res.getMessage();
         }
         assert service.getOrderQueue().size() == initialOrders + 10 : "Queue count mismatch";
 
-        // 2. Dispatch 5 orders
         for (int i = 1; i <= 5; i++) {
             OpResult res = service.dispatchNext(2.50);
             assert res.isSuccess() : "Failed to dispatch order: " + res.getMessage();
         }
 
-        // 3. Test Business Rules:
-        // BR-01: Duplicate SKU rejection
         OpResult r1 = service.addProduct(300, "Duplicate Mouse", 500.0, 10);
         assert !r1.isSuccess() : "BR-01 Failed: Duplicate SKU allowed!";
 
-        // BR-02: Non-existent SKU order
         OpResult r2 = service.enqueueOrder("Test", 99999, 1, "Manila", 1);
         assert !r2.isSuccess() : "BR-02 Failed: Non-existent SKU order allowed!";
 
-        // BR-06: Anti-lost-update rollback
         OpResult r3 = service.restock(300, 20);
         assert r3.isSuccess() : "Restock failed";
         OpResult r4 = service.undoRestock();
         assert r4.isSuccess() : "Safe undo failed";
 
-        // Re-sort packages
-        service.sortPackages(1, 1, true); // QuickSort by Weight
-        service.sortPackages(2, 2, true); // InsertionSort by Priority
+        service.sortPackages(1, 1, true);
+        service.sortPackages(2, 2, true);
 
         long endService = System.nanoTime();
         double elapsedServiceMs = (endService - startService) / 1_000_000.0;

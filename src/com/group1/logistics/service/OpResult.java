@@ -1,9 +1,5 @@
 package com.group1.logistics.service;
 
-/**
- * Standardized result wrapper for all business operations.
- * Allows UI and test classes to receive clean success/failure status and user-facing messages.
- */
 public class OpResult {
     private final boolean success;
     private final String message;

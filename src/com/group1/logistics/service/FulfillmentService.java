@@ -13,11 +13,6 @@ import com.group1.logistics.sorting.PackageCriteria;
 import com.group1.logistics.sorting.QuickSort;
 import com.group1.logistics.sorting.SortCriteria;
 
-/**
- * Core business logic coordinator for the E-Commerce Fulfillment & Logistics System.
- * Owns OrderQueue, RestockStack, InventoryBST, and FreightPackageArray.
- * Enforces business rules BR-01 through BR-09.
- */
 public class FulfillmentService {
     private final OrderQueue orderQueue;
     private final RestockStack restockStack;
@@ -42,10 +37,6 @@ public class FulfillmentService {
 
         loadDefaultSeedData();
     }
-
-    // =========================================================================
-    // PRODUCT / SKU CATALOG OPERATIONS (BR-01, BR-04, BR-07)
-    // =========================================================================
 
     public OpResult addProduct(int skuId, String name, double price, int stockQty) {
         if (skuId <= 0) {
@@ -76,9 +67,6 @@ public class FulfillmentService {
         return inventoryBst.search(skuId);
     }
 
-    /**
-     * Counts units of the given SKU currently reserved in pending queued orders.
-     */
     public int getReservedQtyInQueue(int skuId) {
         if (skuId <= 0) {
             return 0;
@@ -94,9 +82,6 @@ public class FulfillmentService {
         return reserved;
     }
 
-    /**
-     * Returns net unreserved stock available for new orders (physical stock minus queued orders, floored at 0).
-     */
     public int getAvailableStock(int skuId) {
         Product p = findProduct(skuId);
         if (p == null) {
@@ -106,10 +91,6 @@ public class FulfillmentService {
         return available > 0 ? available : 0;
     }
 
-    /**
-     * Case-insensitive product search by name or substring.
-     * Searches all products in the catalog using in-order traversal array.
-     */
     public Product findProductByName(String query) {
         if (query == null || query.trim().isEmpty()) {
             return null;
@@ -138,10 +119,6 @@ public class FulfillmentService {
         }
         return OpResult.err("SKU #" + skuId + " not found in catalog.");
     }
-
-    // =========================================================================
-    // ORDER DISPATCH OPERATIONS (BR-02, BR-03, BR-08)
-    // =========================================================================
 
     public OpResult enqueueOrder(String customerName, int skuId, int quantity, String destination, int priority) {
         if (customerName == null || customerName.trim().isEmpty()) {
@@ -174,9 +151,6 @@ public class FulfillmentService {
         return OpResult.ok("Order #" + order.getOrderId() + " (" + order.getCustomerName() + ") queued successfully.");
     }
 
-    /**
-     * Dispatch workflow: Peek -> Validate -> Commit (BR-03, BR-04, BR-08).
-     */
     public OpResult dispatchNext(double weightKg) {
         if (orderQueue.isEmpty()) {
             return OpResult.err("Order Queue is empty. No orders to dispatch.");
@@ -198,11 +172,9 @@ public class FulfillmentService {
             return OpResult.err("Parcel weight must be a valid number between 0.01 and 1000.00 kg (BR-08).");
         }
 
-        // Commit: deduct stock and dequeue order
         product.removeStock(frontOrder.getQuantity());
         Order dispatchedOrder = orderQueue.dequeue();
 
-        // Generate FreightPackage
         FreightPackage pkg = new FreightPackage(
                 nextPackageId++,
                 dispatchedOrder.getOrderId(),
@@ -225,10 +197,6 @@ public class FulfillmentService {
         return OpResult.ok("Order #" + rejected.getOrderId() + " (SKU #" + rejected.getSkuId() + ") was rejected and removed from queue.");
     }
 
-    // =========================================================================
-    // RESTOCK & SAFE UNDO OPERATIONS (BR-05, BR-06)
-    // =========================================================================
-
     public OpResult restock(int skuId, int quantityAdded) {
         if (skuId <= 0) {
             return OpResult.err("Invalid SKU ID.");
@@ -245,7 +213,6 @@ public class FulfillmentService {
             return OpResult.err("Cannot restock: SKU #" + skuId + " does not exist in catalog (BR-05).");
         }
 
-        // Atomic commit: add stock and push log
         product.addStock(quantityAdded);
         RestockAction action = new RestockAction(nextActionId++, skuId, quantityAdded, sequenceCounter++);
         restockStack.push(action);
@@ -253,10 +220,6 @@ public class FulfillmentService {
         return OpResult.ok("Restocked +" + quantityAdded + " units to SKU #" + skuId + ". New stock: " + product.getStockQty());
     }
 
-    /**
-     * Safe Undo (Anti-Lost-Update - BR-06).
-     * Subtracts quantityAdded from current stock. Never restores snapshots.
-     */
     public OpResult undoRestock() {
         if (restockStack.isEmpty()) {
             return OpResult.err("No restock actions available to undo.");
@@ -266,7 +229,6 @@ public class FulfillmentService {
         Product product = findProduct(topAction.getSkuId());
 
         if (product == null) {
-            // SKU was deleted after restock: discard entry with warning
             restockStack.pop();
             return OpResult.ok("Restocked SKU #" + topAction.getSkuId() + " was deleted from catalog. Discarded audit entry.");
         }
@@ -276,17 +238,12 @@ public class FulfillmentService {
                     product.getStockQty() + ", Needed to rollback: " + topAction.getQuantityAdded() + "). Entry remains on stack.");
         }
 
-        // Safe subtraction rollback
         product.removeStock(topAction.getQuantityAdded());
         RestockAction popped = restockStack.pop();
 
         return OpResult.ok("Undone Action #" + popped.getActionId() + ": Subtracted " + popped.getQuantityAdded() +
                 " units from SKU #" + popped.getSkuId() + ". Restored stock: " + product.getStockQty());
     }
-
-    // =========================================================================
-    // SORTING OPERATIONS (BR-09)
-    // =========================================================================
 
     public OpResult sortPackages(int algorithm, int criteriaType, boolean asc) {
         if (packageArray.size() <= 1) {
@@ -331,12 +288,7 @@ public class FulfillmentService {
                 " using " + algoName + " (" + (asc ? "Ascending" : "Descending") + ").");
     }
 
-    // =========================================================================
-    // SEED DATA LOADER
-    // =========================================================================
-
     public void loadDefaultSeedData() {
-        // Balanced SKU insertion order (tree height stays at 4 instead of degenerate chain)
         int[] skuIds = {500, 300, 700, 200, 400, 600, 800, 150, 250, 350, 450, 550, 650, 750};
         String[] names = {
                 "Pro Mechanical Keyboard", "Wireless Ergonomic Mouse", "4K Ultra-HD Monitor 27\"",
@@ -364,24 +316,15 @@ public class FulfillmentService {
             inventoryBst.insert(new Product(skuIds[i], names[i], prices[i], stocks[i]));
         }
 
-        // Start with a clean order queue so newly placed orders immediately become #1001 (NEXT)
-        // and displayed product counts match unreserved physical shelf quantities.
-
-        // Pre-load a restock history
         restock(300, 20);
         restock(500, 15);
 
-        // Pre-load several dispatched packages
         packageArray.add(new FreightPackage(nextPackageId++, 991, "Manila Central Hub", 1.45, 1, sequenceCounter++));
         packageArray.add(new FreightPackage(nextPackageId++, 992, "Quezon City Hub", 0.65, 3, sequenceCounter++));
         packageArray.add(new FreightPackage(nextPackageId++, 993, "Makati Logistics Hub", 8.20, 1, sequenceCounter++));
         packageArray.add(new FreightPackage(nextPackageId++, 994, "Manila Central Hub", 15.40, 3, sequenceCounter++));
         packageArray.add(new FreightPackage(nextPackageId++, 995, "Quezon City Hub", 2.10, 4, sequenceCounter++));
     }
-
-    // =========================================================================
-    // ACCESSORS FOR UI TABLE MODELS & STATUS BAR
-    // =========================================================================
 
     public OrderQueue getOrderQueue() {
         return orderQueue;

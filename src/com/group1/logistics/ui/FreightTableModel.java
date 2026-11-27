@@ -5,11 +5,6 @@ import com.group1.logistics.models.FreightPackage;
 
 import javax.swing.table.AbstractTableModel;
 
-/**
- * Custom AbstractTableModel backed directly by FreightPackageArray.
- * Caches formatted weight strings per package reference to avoid String.format GC churn on repaint.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class FreightTableModel extends AbstractTableModel {
     private final FreightPackageArray packages;
     private boolean technicalDetails = false;

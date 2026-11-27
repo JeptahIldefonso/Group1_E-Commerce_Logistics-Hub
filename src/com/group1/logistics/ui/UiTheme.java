@@ -15,19 +15,10 @@ import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
 
-/**
- * Pure standard Java Swing styling and design tokens helper.
- * Includes resolution-independent procedural vector icons (SVG-like),
- * minimalist modern scrollbars, and focus rings.
- * Zero external libraries (no FlatLaf, no MigLayout).
- * Zero Java Collections imports.
- */
 public class UiTheme {
-
-    // Color Palette (Warm Alabaster Canvas + Crisp White Cards)
-    public static final Color BG_WINDOW = new Color(0xF3, 0xF2, 0xEE); // Warm off-white linen canvas
+    public static final Color BG_WINDOW = new Color(0xF3, 0xF2, 0xEE);
     public static final Color SURFACE = new Color(0xFF, 0xFF, 0xFF);
-    public static final Color SURFACE_ALT = new Color(0xF8, 0xF7, 0xF4); // Warm subtle tint
+    public static final Color SURFACE_ALT = new Color(0xF8, 0xF7, 0xF4);
     public static final Color BORDER = new Color(0xD8, 0xD6, 0xCE);
     public static final Color BORDER_CARD = new Color(0xE6, 0xE4, 0xDD);
     public static final Color TABLE_GRID_LINE = new Color(0xF0, 0xEE, 0xE8);
@@ -35,36 +26,31 @@ public class UiTheme {
     public static final Color TEXT_PRIMARY = new Color(0x0F, 0x17, 0x2A);
     public static final Color TEXT_MUTED = new Color(0x57, 0x53, 0x4E);
 
-    // Button / Role Colors
-    public static final Color PRIMARY_NAVY = new Color(0x0D, 0x23, 0x40); // Executive midnight navy CTA
-    public static final Color PRIMARY_BLUE = new Color(0x1D, 0x4E, 0xD8); // Accent action blue
-    public static final Color POSITIVE_GREEN = new Color(0x15, 0x80, 0x3D); // Emerald green (Add Stock)
-    public static final Color WARNING_AMBER = new Color(0xB4, 0x53, 0x09); // Deep amber (Undo)
-    public static final Color DANGER_RED = new Color(0xDC, 0x26, 0x26); // Strong red (Cancel/Delete)
-    public static final Color NEUTRAL_DARK = new Color(0x1E, 0x29, 0x3B); // Slate ink
+    public static final Color PRIMARY_NAVY = new Color(0x0D, 0x23, 0x40);
+    public static final Color PRIMARY_BLUE = new Color(0x1D, 0x4E, 0xD8);
+    public static final Color POSITIVE_GREEN = new Color(0x15, 0x80, 0x3D);
+    public static final Color WARNING_AMBER = new Color(0xB4, 0x53, 0x09);
+    public static final Color DANGER_RED = new Color(0xDC, 0x26, 0x26);
+    public static final Color NEUTRAL_DARK = new Color(0x1E, 0x29, 0x3B);
 
-    // Row Highlights for FIFO / LIFO
-    public static final Color HIGHLIGHT_QUEUE_ROW0 = new Color(0xEF, 0xF6, 0xFF); // Soft sky blue
+    public static final Color HIGHLIGHT_QUEUE_ROW0 = new Color(0xEF, 0xF6, 0xFF);
     public static final Color HIGHLIGHT_QUEUE_ROW0_BORDER = new Color(0xBF, 0xDB, 0xFE);
-    public static final Color HIGHLIGHT_STACK_ROW0 = new Color(0xFF, 0xFB, 0xEB); // Soft warm amber
+    public static final Color HIGHLIGHT_STACK_ROW0 = new Color(0xFF, 0xFB, 0xEB);
     public static final Color HIGHLIGHT_STACK_ROW0_BORDER = new Color(0xFD, 0xE6, 0x8A);
 
-    // Stock Status Text Colors
     public static final Color STOCK_IN_TEXT = new Color(0x16, 0x65, 0x34);
     public static final Color STOCK_LOW_TEXT = new Color(0xB4, 0x53, 0x09);
     public static final Color STOCK_OUT_TEXT = new Color(0xDC, 0x26, 0x26);
 
-    // Sidebar Design Tokens (Rich Midnight Navy Blue)
-    public static final Color SIDEBAR_BG = new Color(0x0B, 0x1B, 0x33); // Deep navy blue
-    public static final Color SIDEBAR_HOVER = new Color(0x13, 0x2A, 0x4D); // Hover navy
-    public static final Color SIDEBAR_ACTIVE = new Color(0x1A, 0x37, 0x63); // Active navy pill
-    public static final Color SIDEBAR_TEXT = new Color(0xCB, 0xD5, 0xE1); // Soft slate-white
+    public static final Color SIDEBAR_BG = new Color(0x0B, 0x1B, 0x33);
+    public static final Color SIDEBAR_HOVER = new Color(0x13, 0x2A, 0x4D);
+    public static final Color SIDEBAR_ACTIVE = new Color(0x1A, 0x37, 0x63);
+    public static final Color SIDEBAR_TEXT = new Color(0xCB, 0xD5, 0xE1);
     public static final Color SIDEBAR_TEXT_ACTIVE = Color.WHITE;
-    public static final Color SIDEBAR_ACCENT = new Color(0x38, 0xBD, 0xF8); // Sky-blue active indicator
-    public static final Color SIDEBAR_CATEGORY = new Color(0x7C, 0x94, 0xB8); // Periwinkle-slate label
+    public static final Color SIDEBAR_ACCENT = new Color(0x38, 0xBD, 0xF8);
+    public static final Color SIDEBAR_CATEGORY = new Color(0x7C, 0x94, 0xB8);
     public static final Color SIDEBAR_BORDER = new Color(0x15, 0x2B, 0x4B);
 
-    // Inline Feedback Bar Colors
     public static final Color FEEDBACK_SUCCESS_BG = new Color(0xDC, 0xFC, 0xE7);
     public static final Color FEEDBACK_SUCCESS_TEXT = new Color(0x14, 0x53, 0x2D);
     public static final Color FEEDBACK_ERROR_BG = new Color(0xFE, 0xE2, 0xE2);
@@ -72,7 +58,6 @@ public class UiTheme {
     public static final Color FEEDBACK_READY_BG = new Color(0xEC, 0xEB, 0xE5);
     public static final Color FEEDBACK_READY_TEXT = new Color(0x44, 0x40, 0x3C);
 
-    // Typography (13-14pt for optimal legibility)
     public static final Font FONT_PAGE_TITLE = new Font("Segoe UI", Font.BOLD, 20);
     public static final Font FONT_PAGE_SUBTITLE = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 14);
@@ -85,10 +70,6 @@ public class UiTheme {
     public static final Font FONT_SIDEBAR_ITEM = new Font("Segoe UI", Font.PLAIN, 13);
     public static final Font FONT_SIDEBAR_ITEM_ACTIVE = new Font("Segoe UI", Font.BOLD, 13);
     public static final Font FONT_SIDEBAR_CAT = new Font("Segoe UI", Font.BOLD, 10);
-
-    // =========================================================================
-    // RESOLUTION-INDEPENDENT VECTOR ICONS (SVG-LIKE PURE SWING)
-    // =========================================================================
 
     public enum IconType {
         PLUS, SHIP, CANCEL, SEARCH, DELETE, UNDO, REFRESH, WEIGHT, SPEED, BOX, STORE, CLOSE
@@ -135,51 +116,46 @@ public class UiTheme {
                     g2.drawLine(x + 2, y + size / 2, x + size - 2, y + size / 2);
                     break;
 
-                case SHIP: // Delivery Truck
+                case SHIP:
                     g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    // Cargo box
                     g2.drawRoundRect(x + 1, y + 2, size - 7, size - 6, 2, 2);
-                    // Cabin front
                     g2.drawLine(x + size - 6, y + 5, x + size - 2, y + 8);
                     g2.drawLine(x + size - 2, y + 8, x + size - 2, y + size - 4);
-                    // Wheels
                     g2.fillOval(x + 3, y + size - 4, 3, 3);
                     g2.fillOval(x + size - 6, y + size - 4, 3, 3);
                     break;
 
-                case CANCEL: // X mark
+                case CANCEL:
                     g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawLine(x + 3, y + 3, x + size - 3, y + size - 3);
                     g2.drawLine(x + size - 3, y + 3, x + 3, y + size - 3);
                     break;
 
-                case SEARCH: // Magnifier
+                case SEARCH:
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     int circle = size - 6;
                     g2.drawOval(x + 1, y + 1, circle, circle);
                     g2.drawLine(x + circle - 1, y + circle - 1, x + size - 2, y + size - 2);
                     break;
 
-                case DELETE: // Trash Can
+                case DELETE:
                     g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    g2.drawLine(x + 2, y + 3, x + size - 2, y + 3); // lid
-                    g2.drawRoundRect(x + 3, y + 4, size - 6, size - 6, 2, 2); // body
+                    g2.drawLine(x + 2, y + 3, x + size - 2, y + 3);
+                    g2.drawRoundRect(x + 3, y + 4, size - 6, size - 6, 2, 2);
                     g2.drawLine(x + size / 2, y + 6, x + size / 2, y + size - 4);
                     break;
 
-                case UNDO: // Crisp U-turn Rollback Arrow
+                case UNDO:
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    // Arrowhead pointing left at top-left
                     g2.drawLine(x + 2, y + 4, x + 5, y + 1);
                     g2.drawLine(x + 2, y + 4, x + 5, y + 7);
-                    // Top horizontal shaft -> curved right loop -> bottom base
                     int rightArcX = x + size - 7;
                     g2.drawLine(x + 2, y + 4, rightArcX, y + 4);
                     g2.drawArc(rightArcX - 3, y + 4, 6, size - 7, 90, -180);
                     g2.drawLine(x + 4, y + size - 3, rightArcX, y + size - 3);
                     break;
 
-                case REFRESH: // Circular Reload Arrow
+                case REFRESH:
                     g2.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawArc(x + 2, y + 2, size - 4, size - 4, 35, 285);
                     int ax = x + size - 3;
@@ -188,14 +164,14 @@ public class UiTheme {
                     g2.drawLine(ax, ay + 2, ax - 4, ay + 2);
                     break;
 
-                case WEIGHT: // Scale / Balance
+                case WEIGHT:
                     g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawLine(x + 2, y + 4, x + size - 2, y + 4);
                     g2.drawLine(x + size / 2, y + 2, x + size / 2, y + size - 2);
                     g2.drawLine(x + 3, y + size - 2, x + size - 3, y + size - 2);
                     break;
 
-                case SPEED: // Fast Double Chevron >>
+                case SPEED:
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawLine(x + 3, y + 2, x + 7, y + size / 2);
                     g2.drawLine(x + 7, y + size / 2, x + 3, y + size - 2);
@@ -203,20 +179,19 @@ public class UiTheme {
                     g2.drawLine(x + 12, y + size / 2, x + 8, y + size - 2);
                     break;
 
-                case BOX: // Parcel
+                case BOX:
                     g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawRect(x + 2, y + 2, size - 4, size - 4);
                     g2.drawLine(x + 2, y + 6, x + size - 2, y + 6);
                     g2.drawLine(x + size / 2, y + 6, x + size / 2, y + size - 2);
                     break;
 
-                case STORE: { // Storefront with striped awning, 4 scallops, left window, right door
+                case STORE: {
                     Graphics2D gs = (Graphics2D) g2.create();
                     gs.translate(x, y);
                     double s = size / 24.0;
                     gs.scale(s, s);
 
-                    // 4 Awning roof stripes (slanted trapezoid panels)
                     double[][] panels = {
                             {4.2, 3.0, 7.6, 3.0, 6.4, 8.7, 2.0, 8.7},
                             {8.5, 3.0, 11.55, 3.0, 11.55, 8.7, 7.3, 8.7},
@@ -233,7 +208,6 @@ public class UiTheme {
                         gs.fill(panel);
                     }
 
-                    // 4 Scalloped awning arches underneath
                     double[] scallopX = {2.0, 7.2, 12.4, 17.6};
                     for (int i = 0; i < scallopX.length; i++) {
                         double sx = scallopX[i];
@@ -242,7 +216,6 @@ public class UiTheme {
                         gs.fill(scallop);
                     }
 
-                    // Store body base with transparent window (left) and open doorway (right)
                     Area base = new Area(new RoundRectangle2D.Double(3.3, 12.2, 17.4, 8.8, 1.2, 1.2));
                     base.subtract(new Area(new RoundRectangle2D.Double(5.2, 14.3, 6.4, 4.1, 0.9, 0.9)));
                     base.subtract(new Area(new java.awt.geom.Rectangle2D.Double(13.9, 14.3, 4.3, 6.8)));
@@ -252,7 +225,7 @@ public class UiTheme {
                     break;
                 }
 
-                case CLOSE: // Modal close X
+                case CLOSE:
                     g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                     g2.drawLine(x + 3, y + 3, x + size - 3, y + size - 3);
                     g2.drawLine(x + size - 3, y + 3, x + 3, y + size - 3);
@@ -261,10 +234,6 @@ public class UiTheme {
             g2.dispose();
         }
     }
-
-    // =========================================================================
-    // BUTTON BUILDERS WITH EMBEDDED ICONS (TACTILE PURE-SWING)
-    // =========================================================================
 
     private static void paintButtonLabel(JButton btn, Graphics2D g2, Icon icon, Color activeFg, int yOffset) {
         int w = btn.getWidth();
@@ -339,7 +308,6 @@ public class UiTheme {
                     g2.setColor(fill);
                     g2.fillRoundRect(0, 0, w, h, 8, 8);
 
-                    // Crisp outer edge & subtle top sheen
                     g2.setColor(darken(bg, 0.25f));
                     g2.drawRoundRect(0, 0, w - 1, h - 1, 8, 8);
                     if (!pressed) {
@@ -403,9 +371,6 @@ public class UiTheme {
         return btn;
     }
 
-    /**
-     * Button that cleanly flips between Navy primary (active) and Crisp White outlined (inactive).
-     */
     public static JButton createToggleSortButton(String text, Icon icon, boolean initialActive, String tooltip) {
         JButton btn = new JButton(text) {
             @Override
@@ -488,10 +453,10 @@ public class UiTheme {
     public static JButton createWarningButton(String text, Icon icon, String tooltip) {
         return createOutlinedButton(
                 text, icon,
-                new Color(0xFF, 0xFB, 0xEB), // Soft warm amber surface
-                new Color(0xFE, 0xF3, 0xC7), // Hover amber
-                new Color(0xFD, 0xE6, 0x8A), // Pressed amber
-                new Color(0xF5, 0x9E, 0x0B), // Crisp amber border
+                new Color(0xFF, 0xFB, 0xEB),
+                new Color(0xFE, 0xF3, 0xC7),
+                new Color(0xFD, 0xE6, 0x8A),
+                new Color(0xF5, 0x9E, 0x0B),
                 new Color(0xD9, 0x77, 0x06),
                 WARNING_AMBER, tooltip
         );
@@ -504,9 +469,9 @@ public class UiTheme {
     public static JButton createSecondaryButton(String text, Icon icon, String tooltip) {
         return createOutlinedButton(
                 text, icon,
-                SURFACE,                     // Crisp white button matching ElectronDB
-                new Color(0xF5, 0xF4, 0xEF), // Warm stone hover
-                new Color(0xE8, 0xE6, 0xDF), // Warm stone pressed
+                SURFACE,
+                new Color(0xF5, 0xF4, 0xEF),
+                new Color(0xE8, 0xE6, 0xDF),
                 BORDER,
                 new Color(0xB8, 0xB5, 0xAC),
                 NEUTRAL_DARK, tooltip
@@ -541,10 +506,6 @@ public class UiTheme {
         panel.setBorder(new CompoundBorder(titleBorder, new EmptyBorder(10, 12, 10, 12)));
         return panel;
     }
-
-    // =========================================================================
-    // MODERN MINIMALIST SCROLLBAR UI
-    // =========================================================================
 
     public static class MinimalistScrollBarUI extends BasicScrollBarUI {
         @Override
@@ -585,7 +546,7 @@ public class UiTheme {
 
         @Override
         public Dimension getPreferredSize(JComponent c) {
-            return new Dimension(8, 8); // Slim 8px width
+            return new Dimension(8, 8);
         }
     }
 
@@ -597,10 +558,6 @@ public class UiTheme {
         sp.getVerticalScrollBar().setUnitIncrement(16);
         return sp;
     }
-
-    // =========================================================================
-    // INTERACTIVE INPUT FOCUS RINGS
-    // =========================================================================
 
     public static void installFocusRing(JTextField field) {
         Border normalBorder = new CompoundBorder(
@@ -625,10 +582,6 @@ public class UiTheme {
         });
     }
 
-    // =========================================================================
-    // TABLE CONFIGURATION & RENDERERS
-    // =========================================================================
-
     public static void configureTable(JTable table) {
         table.setRowHeight(36);
         table.setFont(FONT_REGULAR);
@@ -640,7 +593,6 @@ public class UiTheme {
         table.setShowVerticalLines(false);
         table.setIntercellSpacing(new Dimension(0, 1));
 
-        // Strict Compliance Safeguard: Disable TableRowSorter (Trap 5)
         table.setAutoCreateRowSorter(false);
 
         JTableHeader header = table.getTableHeader();
@@ -652,10 +604,6 @@ public class UiTheme {
         header.setBorder(new MatteBorder(0, 0, 1, 0, BORDER_CARD));
     }
 
-    /**
-     * Modern SaaS status pill cell renderer.
-     * Renders centered rounded badges matching ElectronDB design.
-     */
     public static class StatusPillRenderer extends DefaultTableCellRenderer {
         private String pillText = "";
         private Color rowBg = SURFACE;
@@ -686,7 +634,7 @@ public class UiTheme {
                 pillBg = new Color(0xDB, 0xEA, 0xFE);
                 pillFg = new Color(0x1D, 0x4E, 0xD8);
                 pillBorder = new Color(0xBF, 0xDB, 0xFE);
-            } else { // "In Stock", "Active", or default
+            } else {
                 pillBg = new Color(0xDC, 0xFC, 0xE7);
                 pillFg = new Color(0x16, 0x65, 0x34);
                 pillBorder = new Color(0xBB, 0xF7, 0xD0);
@@ -740,7 +688,7 @@ public class UiTheme {
 
                 if (col == 0 || col == 1 || col == 6) {
                     setHorizontalAlignment(SwingConstants.CENTER);
-                } else if (col == 4) { // Qty
+                } else if (col == 4) {
                     setHorizontalAlignment(SwingConstants.RIGHT);
                 } else {
                     setHorizontalAlignment(SwingConstants.LEFT);
@@ -872,9 +820,6 @@ public class UiTheme {
         };
     }
 
-    /**
-     * Maps internal delivery priority codes (1..5) to concise UI labels.
-     */
     public static String formatDeliverySpeed(int deliveryPriority) {
         switch (deliveryPriority) {
             case 1: return "Express (fastest)";

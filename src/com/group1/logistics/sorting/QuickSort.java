@@ -2,20 +2,7 @@ package com.group1.logistics.sorting;
 
 import com.group1.logistics.models.FreightPackage;
 
-/**
- * Custom QuickSort implementation using Hoare partitioning, median-of-three pivot selection,
- * and tail-call optimization to prevent stack overflow on large or equal-weight datasets (Trap 1).
- * Strictly operates on active elements 0 .. count - 1.
- */
 public class QuickSort {
-
-    /**
-     * Sorts the freight package array in-place over active indices 0 .. count - 1.
-     * @param arr the array to sort.
-     * @param count the number of active packages in the array.
-     * @param c the comparison criteria.
-     * @param asc true for ascending, false for descending.
-     */
     public static void sort(FreightPackage[] arr, int count, SortCriteria c, boolean asc) {
         if (arr == null || count <= 1 || c == null) {
             return;
@@ -26,7 +13,6 @@ public class QuickSort {
     private static void quickSortHelper(FreightPackage[] arr, int low, int high, SortCriteria c, boolean asc) {
         while (low < high) {
             int p = partition(arr, low, high, c, asc);
-            // Tail-call optimization: recurse on the smaller partition, loop on the larger
             if (p - low < high - p) {
                 quickSortHelper(arr, low, p, c, asc);
                 low = p + 1;
@@ -38,7 +24,6 @@ public class QuickSort {
     }
 
     private static int partition(FreightPackage[] arr, int low, int high, SortCriteria c, boolean asc) {
-        // Median-of-three pivot selection protects against pre-sorted inputs (TC-SO11)
         int mid = medianOfThree(arr, low, high, c, asc);
         FreightPackage pivot = arr[mid];
 
@@ -82,7 +67,6 @@ public class QuickSort {
             if (diff != 0) {
                 return asc ? diff : -diff;
             }
-            // Always-ascending sequenceNo tie-breaker so descending sort does not flip tie-breaker
             return Integer.compare(a.getSequenceNo(), b.getSequenceNo());
         }
         int result = c.compare(a, b);

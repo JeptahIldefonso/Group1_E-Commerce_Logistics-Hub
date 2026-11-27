@@ -34,24 +34,19 @@ public class LinearADTTest {
         assert q.isFull() : "Queue should be full at capacity 3";
         assert !q.enqueue(o4) : "Enqueue on full queue should return false";
 
-        // Peek
         assert q.peek().getOrderId() == 1001 : "Peek should return front order (1001)";
 
-        // Dequeue 1
         Order dispatched = q.dequeue();
         assert dispatched.getOrderId() == 1001 : "Dequeued should be 1001 (FIFO)";
         assert q.size() == 2 : "Size after 1 dequeue should be 2";
 
-        // Wrap-around enqueue
         assert q.enqueue(o4) : "Wrap-around enqueue of o4 failed";
         assert q.isFull() : "Queue should be full after wrap-around";
 
-        // Test logical FIFO ordering (TC-Q06)
         assert q.get(0).getOrderId() == 1002 : "Logical index 0 should be 1002";
         assert q.get(1).getOrderId() == 1003 : "Logical index 1 should be 1003";
         assert q.get(2).getOrderId() == 1004 : "Logical index 2 should be 1004";
 
-        // Drain
         assert q.dequeue().getOrderId() == 1002;
         assert q.dequeue().getOrderId() == 1003;
         assert q.dequeue().getOrderId() == 1004;
@@ -77,15 +72,12 @@ public class LinearADTTest {
         assert s.isFull() : "Stack should be full at capacity 3";
         assert !s.push(a4) : "Push on full stack should return false";
 
-        // Peek
         assert s.peek().getActionId() == 3 : "Peek should return newest action (3)";
 
-        // Test display order (newest first, index 0 is top)
         assert s.get(0).getActionId() == 3;
         assert s.get(1).getActionId() == 2;
         assert s.get(2).getActionId() == 1;
 
-        // Pop LIFO
         assert s.pop().getActionId() == 3 : "Pop should return newest action 3";
         assert s.pop().getActionId() == 2;
         assert s.pop().getActionId() == 1;

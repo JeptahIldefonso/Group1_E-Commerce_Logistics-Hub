@@ -2,11 +2,6 @@ package com.group1.logistics.datastructures;
 
 import com.group1.logistics.models.Product;
 
-/**
- * Node structure for InventoryBST.
- * Wraps Product record and contains explicit left and right child pointers.
- * Keeping tree pointers inside SKUNode prevents them from leaking into the UI layer.
- */
 public class SKUNode {
     public Product product;
     public SKUNode left;

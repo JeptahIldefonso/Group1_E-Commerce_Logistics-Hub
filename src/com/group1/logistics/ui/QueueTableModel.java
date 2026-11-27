@@ -7,11 +7,6 @@ import com.group1.logistics.service.FulfillmentService;
 
 import javax.swing.table.AbstractTableModel;
 
-/**
- * Custom AbstractTableModel backed directly by OrderQueue.
- * Shows friendly Product Names, NEXT indicator, and plain-English headers.
- * Pure standard Java Swing; zero Java Collections.
- */
 public class QueueTableModel extends AbstractTableModel {
     private final OrderQueue queue;
     private final FulfillmentService service;
