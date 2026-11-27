@@ -1,405 +1,268 @@
-# Order & Shipping Manager — Logistics Hub
-## Complete Technical Documentation & Plain-English System Guide
+# Order & Shipping Manager (Logistics Hub)
+**Group 1 · BSIS 2nd Year · Data Structures and Algorithms · Final Laboratory Project**  
+*Technical Documentation and User Guide*
 
-**Course:** BSIS 2nd Year — Data Structures & Algorithms (DSA)  
-**Project:** Group 1 — E-Commerce Fulfillment & Logistics System  
-**Platform:** Java 17 LTS · Standard Java Swing / AWT / Java 2D · Zero Third-Party Libraries · Zero Java Collections  
+**Domain:** E-Commerce Fulfillment and Logistics. Built with **Java 17** and **Swing**. No outside libraries and no `java.util` collections.
 
----
-
-## Table of Contents
-1. [Chapter 1: Plain-English Overview & Purpose](#chapter-1-plain-english-overview--purpose)
-2. [Chapter 2: System Architecture & Tech Stack](#chapter-2-system-architecture--tech-stack)
-3. [Chapter 3: Core Data Structures & Algorithms Explained](#chapter-3-core-data-structures--algorithms-explained)
-4. [Chapter 4: Business Rules Contract & Live Stock Reservation](#chapter-4-business-rules-contract--live-stock-reservation)
-5. [Chapter 5: UML Class Diagram & Algorithm Flowcharts](#chapter-5-uml-class-diagram--algorithm-flowcharts)
-6. [Chapter 6: Complete User Guide (Step-by-Step Manual)](#chapter-6-complete-user-guide-step-by-step-manual)
-7. [Chapter 7: Testing, Compliance Verification & Team Defense Guide](#chapter-7-testing-compliance-verification--team-defense-guide)
+This document explains what our app does, how it is built, how to use it, and how we will defend it. The first half is for anyone who wants to understand the system. The second half is the user guide, our test notes, and our defense plan.
 
 ---
 
-# Chapter 1: Plain-English Overview & Purpose
+## 1. What the app does
 
-### 1.1 What Is This Application?
-**Order & Shipping Manager — Logistics Hub** is a standalone offline desktop application built for an e-commerce warehouse (such as Shopee, Lazada, or Amazon fulfillment centers). It gives a warehouse operator one place to track products in stock, queue customer orders fairly, pack and ship parcels, log incoming restocks (with an Undo safety net), and organize shipped boxes for delivery vans.
+Logistics Hub is a desktop program for the back room of an online store—the place where orders get packed and sent out, like the warehouse of a Shopee or Lazada seller. It works offline. You double-click one JAR file and it opens. Nothing is saved to a database, so it starts from the same sample data every time.
 
-### 1.2 Why Does It Matter?
-Without organized data structures behind a warehouse screen, everyday mistakes happen quickly:
-- **Unfair order processing:** Late orders skip ahead of earlier customers if orders are not kept in strict First-In, First-Out (**FIFO**) arrival order.
-- **Overselling stock:** Multiple pending orders can accidentally claim the same remaining items if queued reservations are ignored.
-- **Slow catalog lookup:** Scanning every item one by one slows down as a product catalog grows to thousands of SKUs.
-- **Accidental "Lost Updates" on Undo:** Typing `+500` instead of `+50` during restocking—and then blindly restoring an old stock snapshot after a sale—erases purchases made in between.
-- **Unorganized delivery loading:** Delivery vans need parcels arranged quickly by **parcel weight** (heavy boxes at the bottom) or **delivery speed** (Express boxes loaded first while preserving original arrival order among ties).
+A warehouse worker has four daily jobs, and the app has one screen for each:
 
-### 1.3 Strict Technical Rules Satisfied
-To demonstrate foundational Data Structures & Algorithms mastery under [`FINAL-Project-Guide (1).pdf`](guidelines/FINAL-Project-Guide%20(1).pdf):
-1. **Java 17 LTS strictly** (`javac --release 17`).
-2. **Zero external libraries:** No FlatLaf, MigLayout, Maven/Gradle, JUnit, or third-party JARs.
-3. **Zero Java Collections Framework:** Zero imports of `java.util.*`, `java.time.*`, or `java.text.*` in `src/`. All ADTs (`OrderQueue`, `RestockStack`, `InventoryBST`, `FreightPackageArray`) and sorting algorithms (`QuickSort`, `InsertionSort`) are built from scratch using primitive arrays and object node references.
-4. **Swing Table Compliance:** No `DefaultTableModel`, `TableRowSorter`, or `setAutoCreateRowSorter(true)`. Every table uses a custom non-editable `AbstractTableModel`, and shipment column headers invoke custom sorting via `MouseAdapter` listeners.
-5. **Clean Architecture Separation:** UI screens in `com.group1.logistics.ui` interact exclusively through `FulfillmentService` and receive `OpResult` feedback objects—never mutating data structures directly.
+1. **Products.** The list of everything the store sells, with a product code, a name, a price in pesos (`₱`), and the stock left. You can search for an item by code or name, add a new one, or delete one that is no longer sold.
+2. **Orders.** Customer orders wait in line, first come first served. The worker checks the stock, ships the order at the front, or cancels it, and the stock count stays correct either way.
+3. **Restock.** When a supplier delivers more items, the worker records it here. If someone typed the wrong number, **Undo Last Restock** fixes it, unless some of those items have already been shipped.
+4. **Shipments.** The packages that have been sent out. They can be sorted by weight or by delivery speed, or by clicking the column headers.
+
+There is a reason for splitting it this way. Each screen shows one of the data structures our subject asks for: **Orders** is the queue, **Restock** is the stack, **Products** is the binary search tree, and **Shipments** is the array with the sorting algorithms.
+
+### The rules we followed
+- **Java 17 only.** We compile with `javac --release 17` into one runnable file, `LogisticsHub.jar` (49 class files).
+- **No outside libraries and no Java collections.** Under [`FINAL-Project-Guide (1).pdf`](guidelines/FINAL-Project-Guide%20(1).pdf), none of these appear anywhere in our `src` folder: `ArrayList`, `LinkedList`, `Queue`, `Stack`, `HashMap`, `Arrays.sort`, `Comparator`, `java.time`, `java.text`, or any look-and-feel JAR. We wrote our own versions of what we needed.
+- **Every table uses `AbstractTableModel`** and its cells cannot be edited (`isCellEditable` returns `false`). We did not use `DefaultTableModel` or `TableRowSorter`. Clicking a column header to sort is handled by our own mouse listeners.
 
 ---
 
-# Chapter 2: System Architecture & Tech Stack
+## 2. How the program is organized
 
-### 2.1 Layered Software Architecture
-The codebase organizes **30 source classes** (`src/`) and **6 test suites** (`test/`) into clean layers:
+We split the code into layers so that button clicks do not contain business rules or pointer logic. The screens only show things and pass requests along. A service class decides what is allowed. The data structures only store and retrieve data. In total there are **30 source files**, plus **6 test programs**.
 
-| Layer | Package | Responsibility | Classes |
-| :--- | :--- | :--- | :--- |
-| **Entry Point** | `com.group1.logistics` | Initializes native OS Look & Feel and launches `MainFrame` on the Swing Event Dispatch Thread (EDT). | `Main` |
-| **Desktop UI (View)** | `com.group1.logistics.ui` | Modern **App Shell** (`SidebarPanel` + `CardLayout` workspace + bottom toast strip), custom `AbstractTableModel` views, modal dialogs, and centralized `UiTheme` design system. | `MainFrame`, `SidebarPanel`, `UiTheme`, `OrdersPanel`, `CatalogPanel`, `RestockPanel`, `FreightPanel`, `QueueTableModel`, `CatalogTableModel`, `RestockTableModel`, `FreightTableModel`, `PlaceOrderDialog`, `AddProductDialog`, `AddStockDialog` |
-| **Service Layer (Brain)** | `com.group1.logistics.service` | Central coordinator owning all 4 data structures, enforcing business rules `BR-01`–`BR-09`, atomic dispatch, safe undo, and live queued-stock calculations. | `FulfillmentService`, `OpResult` |
-| **Custom ADTs** | `com.group1.logistics.datastructures` | From-scratch linear and hierarchical structures built purely with arrays and explicit node pointers. | `OrderQueue`, `RestockStack`, `InventoryBST`, `SKUNode`, `FreightPackageArray` |
-| **Sorting Engine** | `com.group1.logistics.sorting` | Custom comparator interface (`SortCriteria`), package criteria, and two in-place sorting algorithms. | `SortCriteria`, `PackageCriteria`, `QuickSort`, `InsertionSort` |
-| **Domain Models** | `com.group1.logistics.models` | Validated data entities with invariant guards (positive IDs, non-negative stock, bounded weights/priorities). | `Product`, `Order`, `RestockAction`, `FreightPackage` |
-| **Verification (Tests)** | `com.group1.logistics` (`test/`) | Standalone Java console tests and high-volume performance benchmarks without external test frameworks. | `LinearADTTest`, `BSTTest`, `SortTest`, `ServiceTest`, `FullSystemCheckupTest`, `UltimatePerformanceTest` |
-
-### 2.2 Frontend App Shell Organization
-In industry UI/UX terminology, the frontend follows a **Modern SaaS / ERP Dashboard App Shell** pattern implemented cleanly in standard Swing + Java 2D (`Graphics2D`):
-- **Left Navigation Sidebar (`SidebarPanel`, `220px` fixed navy rail `#0B1B33`):** Houses the vector Storefront brand badge, module buttons with live item count pills (`Orders`, `Products`, `Restock`, `Shipments`), and the **Technical details** checkbox.
-- **Central Card Workspace (`CardLayout`):** Switches cleanly between the 4 module views (`OrdersPanel`, `CatalogPanel`, `RestockPanel`, `FreightPanel`), automatically refreshing tables on tab change (`MainFrame.showTab(index)`). **Products** opens by default at startup.
-- **Bottom Notification Strip (`pnlFeedback`):** Displays color-coded `OpResult` feedback banners (neutral Ready, green Success, red Error/Blocked).
-- **Centralized Design Tokens (`UiTheme`):** Stores fonts (`Segoe UI`), warm alabaster window background (`#F3F2EE`), surface cards (`#FFFFFF`), custom `VectorIcon` drawings (`STORE`, `SHIP`, `BOX`, `PLUS`, `WEIGHT`, `SPEED`, `SEARCH`, `REFRESH`, `DELETE`, `CANCEL`, `UNDO`, `CLOSE`), pill status renderers, and custom scrollbars (`BasicScrollBarUI`).
-
----
-
-# Chapter 3: Core Data Structures & Algorithms Explained
-
-### 3.1 Circular Array Queue (`OrderQueue`) — Module 1 (FIFO)
-* **Real-World Role:** Holds incoming customer orders waiting to be packed and shipped (`#1001`, `#1002`, ...).
-* **Rule:** **FIFO (First In, First Out)** — the customer who ordered first is always `NEXT` to ship.
-* **How the Circular Carousel Works:**  
-  Instead of shifting every remaining order left after removing element `0` (which wastes $O(n)$ time), `OrderQueue` uses a fixed `Order[20]` array with modular wrap-around indexing (`capacity = 20`):
-  - **Enqueue:** `rear = (rear + 1) % capacity; elements[rear] = order; count++;` -> **$O(1)$**
-  - **Dequeue:** `removed = elements[front]; elements[front] = null; front = (front + 1) % capacity; count--;` -> **$O(1)$**
-  - **Logical Display (`get(logicalIndex)`):** `elements[(front + logicalIndex) % capacity]` keeps the UI table displaying orders strictly from `NEXT` (index `0`) down to the newest arrival, even after `rear` wraps back to physical index `0`.
-* **Clean Startup State:** The app initializes `OrderQueue` empty (`0/20`) on startup so newly placed user orders immediately appear at the front as **`#1001 (NEXT)`**, without pre-reserved startup stock.
-
-### 3.2 LIFO Audit Stack (`RestockStack`) — Module 1 (LIFO)
-* **Real-World Role:** Records warehouse stock additions (`RestockAction`) and powers **Undo Last Restock**.
-* **Rule:** **LIFO (Last In, First Out)** — like a spring-loaded stack of trays (`top = -1` when empty, capacity `20`).
-* **Key Operations:**
-  - **Push:** `elements[++top] = action;` -> **$O(1)$**
-  - **Pop:** Reads `elements[top]`, nulls the vacated slot for garbage-collection hygiene, and executes `top--;` -> **$O(1)$**
-  - **Newest-First Table View (`get(indexFromTop)`):** Returns `elements[top - indexFromTop]` so row `0` in **Restock** is always the most recent replenishment.
-* **Anti-Lost-Update Safe Undo (`BR-06`):**  
-  Never restores an old stock snapshot. Instead, `FulfillmentService.undoRestock()` peeks the top action and **subtracts `quantityAdded`** from current physical stock—only if `product.getStockQty() >= quantityAdded`. If units were already shipped, Undo is blocked cleanly and the audit entry remains on the stack.
-
-### 3.3 Hierarchical Binary Search Tree (`InventoryBST` + `SKUNode`) — Module 2
-* **Real-World Role:** Acts as the master product index keyed by unique numeric **Product Code (`skuId`)**.
-* **BR-01 Invariant Note (`left < root < right`):**  
-  While the general project specification mentions `left <= root < right`, warehouse SKU codes are canonical primary keys (`BR-01`). Therefore `InventoryBST` strictly enforces `left.skuId < root.skuId < right.skuId` and rejects duplicate SKU insertions cleanly without modifying tree size.
-* **Core Operations:**
-  - **Recursive Insertion (`insertRecursive`):** Single tree descent adding a leaf `SKUNode` only when `targetId != currentId`; tracks insertion via a `boolean[1]` flag so `size` never double-increments.
-  - **Balanced Seed Insertion:** On startup, 14 products are inserted in a balanced sequence (`500, 300, 700, 200, 400, 600, 800, 150, 250, 350, 450, 550, 650, 750`) so initial **BST Height is `4`** rather than a degenerate linear chain of `14`.
-  - **Iterative Target Search (`search`):** Navigates left or right in **$O(\log n)$ average time** and **$O(1)$ stack space**.
-  - **In-Order Traversal (`inOrderRecursive`):** Visits **Left -> Node -> Right**, producing `Product[]` already sorted ascending by Product Code without running a separate sort.
-  - **3-Case Node Deletion (`deleteRecursive`):**
-    1. **Case 1 (Leaf Node):** `left == null && right == null` -> returns `null`.
-    2. **Case 2 (One Child):** Returns the single non-null child (`current.right` or `current.left`).
-    3. **Case 3 (Two Children):** Finds the **In-Order Successor** (`findMin(current.right)` — leftmost node in the right subtree), copies `successor.product` into `current`, and recursively deletes `successor` from `current.right` using a **dummy flag** (`Double-Decrement Guard`) so `size` decrements exactly once.
-* **UI Performance Optimization:** `CatalogTableModel` caches formatted Peso prices (`₱`), lowercased names, net available stock, and stock KPI counts in a single `refresh()` pass; numeric search performs BST lookup + $O(\log n)$ binary row lookup (`findRowBySkuId`), while text search scans cached lowercased names with a `250 ms` Swing `Timer` debounce.
-
-### 3.4 Dynamic Package Array & Custom Sorting Engine (`FreightPackageArray`, `QuickSort`, `InsertionSort`) — Module 3
-* **Dynamic Storage (`FreightPackageArray`):** Replaces `java.util.ArrayList` using a primitive `FreightPackage[]` backing array (`initialCapacity = 16`). When `count == data.length`, `ensureCapacity()` allocates `data.length * 2` and copies via `System.arraycopy`.
-* **Sorting Interface (`SortCriteria` & `PackageCriteria`):** Replaces `java.util.Comparator` via `@FunctionalInterface int compare(FreightPackage a, FreightPackage b)` with 4 criteria: `BY_WEIGHT`, `BY_PRIORITY`, `BY_ID`, and `BY_DESTINATION`.
-* **Algorithm 1 — `QuickSort` (Weight & Package No.):**
-  - **Hoare Partitioning** + **Median-of-Three Pivot Selection** (`low`, `mid`, `high`) prevents $O(n^2)$ behavior on pre-sorted shipments.
-  - **Tail-Call Optimization:** Always recurses on the smaller partition and loops on the larger partition, preventing `StackOverflowError` even on 50,000 identical-weight packages.
-  - **Tie-Breaker:** Equal weights always sort ascending by `sequenceNo` so reversing weight direction does not invert equal-weight order.
-* **Algorithm 2 — `InsertionSort` (Delivery Speed & Destination):**
-  - Shifts elements only on strict inequality (`> 0` ascending, `< 0` descending).
-  - Because `PackageCriteria.BY_PRIORITY` compares only `deliveryPriority`, **strict inequality guarantees stability**—two packages with the same `Standard` or `Express` tier remain in exact FIFO arrival order.
-
-### 3.5 Time & Space Complexity Summary
-
-| Component | Operation | Average Time | Worst Case | Extra Space |
-| :--- | :--- | :---: | :---: | :---: |
-| **`OrderQueue`** | `enqueue()`, `dequeue()`, `peek()`, `get()` | $O(1)$ | $O(1)$ | $O(N)$ circular array (`20`) |
-| **`RestockStack`** | `push()`, `pop()`, `peek()`, `get()` | $O(1)$ | $O(1)$ | $O(N)$ linear array (`20`) |
-| **`InventoryBST`** | `insert()`, `search()`, `delete()` | $O(\log n)$ | $O(n)$ unbalanced | $O(\log n)$ recursive call stack / $O(1)$ search |
-| **`InventoryBST`** | `inOrder()` | $O(n)$ | $O(n)$ | $O(n)$ result array |
-| **`FreightPackageArray`** | `add()` / `get()` | $O(1)$ amortized / $O(1)$ | $O(n)$ on resize | $O(n)$ doubling primitive array |
-| **`QuickSort`** | Sort by Weight / Package No. | $O(n \log n)$ | $O(n^2)$ | $O(\log n)$ stack (tail-call bounded) |
-| **`InsertionSort`** | Sort by Delivery Speed / Destination | $O(n^2)$ ($O(n)$ nearly sorted) | $O(n^2)$ | $O(1)$ in-place |
-
----
-
-# Chapter 4: Business Rules Contract & Live Stock Reservation
-
-### 4.1 Business Rules (`BR-01` to `BR-09`)
-
-| Rule ID | Contract Summary | Enforced Where |
+| Part | Package | What it does |
 | :--- | :--- | :--- |
-| **BR-01** | Product Code (`skuId`) must be unique and positive (`>= 1`). Duplicates are rejected without altering BST `size`. | `FulfillmentService.addProduct()`, `InventoryBST.insertRecursive()` |
-| **BR-02** | Customer orders require an existing `skuId`, `quantity >= 1`, non-empty `customerName` and `destination` (no `\|`), and `deliveryPriority` in `1..5` (UI exposes `1, 3, 4`). | `FulfillmentService.enqueueOrder()`, `Order` constructor |
-| **BR-03** | **Peek -> Validate -> Commit Dispatch:** An order leaves `OrderQueue` only after SKU existence, physical stock sufficiency, and weight validation pass (or on explicit Cancel). | `FulfillmentService.dispatchNext()` |
-| **BR-04** | Product physical `stockQty` can never become negative (`>= 0`). | `Product.addStock()`, `Product.removeStock()` |
-| **BR-05** | **Atomic Restock:** Verify SKU exists in `InventoryBST` and `!restockStack.isFull()` before updating stock or pushing audit record. | `FulfillmentService.restock()` |
-| **BR-06** | **Safe Subtraction Undo:** Subtract `quantityAdded` from physical stock only when `stockQty >= quantityAdded`. Refuse if already shipped; discard audit entry if SKU was later deleted. | `FulfillmentService.undoRestock()` |
-| **BR-07** | Product deletion requires confirmation and executes full 3-case BST deletion; any previously queued order for a removed SKU is caught safely at dispatch. | `CatalogPanel.handleDeleteProduct()`, `FulfillmentService.deleteProduct()` |
-| **BR-08** | A `FreightPackage` is created only upon valid dispatch; service enforces finite weight `0.01 - 1000.00 kg` (UI prompts `0.01 - 50.00 kg`). | `FulfillmentService.dispatchNext()`, `FreightPackage` |
-| **BR-09** | Sorting operates strictly in-place on `FreightPackageArray` and never modifies `InventoryBST`, `OrderQueue`, or `RestockStack`. | `FulfillmentService.sortPackages()` |
+| **Entry point** | `com.group1.logistics` | `Main` sets the system look and feel and opens `MainFrame` safely on the Swing event thread. |
+| **Screens** | `com.group1.logistics.ui` | `MainFrame`, `SidebarPanel`, `UiTheme`, four panels (one per screen), four table models and three pop-up dialogs. A navy sidebar on the left, the active screen in the middle, a message strip at the bottom, and icons and colored status labels drawn with Java 2D. The screens only talk to `FulfillmentService`. |
+| **Service (the brain)** | `com.group1.logistics.service` | `FulfillmentService` and `OpResult`. It enforces business rules `BR-01` to `BR-09`, checks stock before an order leaves the queue, counts queued quantities as already taken, and blocks an undo that would erase shipped items. `OpResult` carries success or failure, plus a message, back to the screen. |
+| **Data structures** | `com.group1.logistics.datastructures` | `OrderQueue`, `RestockStack`, `InventoryBST`, `SKUNode` and `FreightPackageArray`, all built by hand: a circular array queue, a stack with a top pointer, a binary search tree with left and right pointers, and an array that doubles when full. |
+| **Sorting** | `com.group1.logistics.sorting` | `SortCriteria`, `PackageCriteria`, `QuickSort` and `InsertionSort`. Our own comparison interface, a Hoare QuickSort for weight and package number, and a stable InsertionSort for delivery speed and destination. |
+| **Models** | `com.group1.logistics.models` | `Product`, `Order`, `RestockAction` and `FreightPackage`. They refuse bad values: no negative stock, no zero or negative IDs, no infinite weights, and priority must be 1 to 5. |
 
-### 4.2 Live Queued-Stock Reservation Formula
-To prevent double-booking remaining shelf inventory while orders are waiting in `OrderQueue`:
-- `getReservedQtyInQueue(skuId)` sums `order.getQuantity()` across all currently waiting orders in `OrderQueue` matching `skuId`.
-- `getAvailableStock(skuId)` computes $\max(0,\ \text{physical } stockQty - \text{reservedQtyInQueue})$.
-- **What happens at every step:**
-  1. **When you place an order** for 8 units of a product with 8 in stock (`PlaceOrderDialog`), **Products** and **Place Order** immediately show **`0` (`Out of Stock`)**, and subsequent orders for that item are blocked.
-  2. **When you ship the order (`Ship Next Order`):** Physical `stockQty` deducts by 8 (`8 -> 0`) while queued reservation drops (`8 -> 0`), so **Available Stock stays cleanly at `0`** (`0 - 0 = 0`) with zero double-deduction.
-  3. **When you cancel (`Cancel Next`):** The order leaves `OrderQueue` without touching physical stock (`8`), queued reservation drops (`8 -> 0`), and **Available Stock immediately returns to `8`**.
+### What the app starts with
+All of this is loaded by `FulfillmentService.loadDefaultSeedData()` when the app opens:
+- **14 products.** We insert them in a chosen order (`500, 300, 700, 200` and so on) so the tree comes out balanced with a height of **4**, instead of a long chain.
+- **0 orders.** The first order you place becomes **`#1001`**, and the stock numbers on screen match the full shelf.
+- **2 restock records** (product `300` with `+20`, product `500` with `+15`) and **5 shipments** (`PKG-501` to `PKG-505`, for orders `#991` to `#995`).
 
 ---
 
-# Chapter 5: UML Class Diagram & Algorithm Flowcharts
+## 3. The data structures and sorting, explained simply
 
-### 5.1 System UML Class Architecture
+### 3.1 The order queue (circular array)
+Picture a packing counter with 20 trays on a turntable. Orders go into the next empty tray. When we ship the first order, we do not slide every other order forward, because that would mean moving everything each time. We just move the front marker one tray along. When a marker passes tray 19 it goes back to tray 0. That wrap-around is done with the remainder operator: `(index + 1) % 20`.
+
+- **`enqueue`:** move `rear` to `(rear + 1) % 20`, store the order there, and add 1 to `count`. It takes the same short time no matter how many orders are waiting, which is **O(1)**.
+- **`dequeue`:** return the order at `front`, set that slot to `null`, and move `front` to `(front + 1) % 20`. Also **O(1)**.
+- **`get(logicalIndex)`:** read `elements[(front + logicalIndex) % 20]`. This is why row 0 on the **Orders** screen is always the next order to ship, even after the queue has wrapped around.
+
+### 3.2 The restock stack (undo history)
+Think of a pile of slips on a clipboard. Each new restock goes on top, and the only one you can take off is the top one. Push and pop both work at the top, so both are **O(1)**. To show the list on screen we read `elements[top - indexFromTop]`, so row 0 is always the latest restock.
+
+Undo (rule `BR-06`) does not put back an old stock number. It subtracts the quantity that was added. Here is why that matters. Say a product has 10 in stock, we restock 20 (now 30), and then 5 are shipped (now 25). Undoing the restock should leave 5, which is 25 minus 20. If we had saved the old number (10) and put it back, we would be bringing back 5 items that already left the warehouse. And if the stock is lower than the amount we are trying to undo, the undo is blocked, because it means those items were already shipped.
+
+### 3.3 The product tree (binary search tree)
+Each node holds one product and is sorted by product code (`skuId` in the code). Smaller codes go to the left and larger codes go to the right.
+
+- **No duplicates (`BR-01`).** Our rule is `left < root < right`. The course prompt writes `left <= root < right`, but a product code identifies one item in the catalog, so a duplicate would split one product's stock across two nodes. Inserting an existing code just returns `false` and nothing changes.
+- **Insert and search.** Insert goes down the tree with recursion and returns the updated child pointers. Search is a loop instead of recursion, so it uses no extra stack space. Both take about **O(log n)** when the tree is balanced.
+- **In-order traversal** (`left`, then `root`, then `right`) gives the products already sorted by code, so the **Products** table never needs a separate sort.
+- **Delete** handles three cases: a leaf, a node with one child, and a node with two children (see Section 5).
+- **For speed on screen,** the product table model keeps prices, lowercase names, available stock and the counts in memory and refreshes them once per refresh. A numeric search uses the tree and a binary search on the rows (`findRowBySkuId`). When you type in the search box, the app waits **250 ms** (a Swing `Timer`) after the last key before searching.
+
+### 3.4 The package array and the two sorts
+`FreightPackageArray` is a plain `FreightPackage[]` that starts with room for 16 packages. When it is full, we make an array twice as big and copy everything over with `System.arraycopy`. This is our replacement for `ArrayList`.
+
+- **QuickSort** sorts by weight and by package number.
+  - It uses Hoare partitioning with a median-of-three pivot, which avoids the slow worst case when the list is already sorted.
+  - After each split it recurses on the smaller half and loops on the larger half. This keeps the call stack short, so even 50,000 packages with the same weight do not cause a `StackOverflowError`.
+  - If two weights are equal, the package with the lower sequence number goes first.
+- **InsertionSort** sorts by delivery speed and by destination.
+  - It only moves an item when the comparison is strictly greater than (or strictly less than) the one before it. Items that are equal never swap.
+  - That makes it **stable**: packages with the same delivery speed stay in the order they arrived.
+
+Why two different sorts? Weights are decimals with many different values, so we want a fast divide-and-conquer sort. Delivery speed has only a few levels with lots of ties, so keeping ties in arrival order matters more than raw speed.
+
+| Structure or sort | Main operations | Average time | Worst case | Extra space |
+| :--- | :--- | :--- | :--- | :--- |
+| `OrderQueue` | `enqueue`, `dequeue`, `peek`, `get` | `O(1)` | `O(1)` | `O(N)`, fixed array of 20 |
+| `RestockStack` | `push`, `pop`, `peek`, `get` | `O(1)` | `O(1)` | `O(N)`, fixed array of 20 |
+| `InventoryBST` | `insert`, `search`, `delete` | `O(log n)` | `O(n)` if unbalanced | `O(log n)` for recursion, `O(1)` for search |
+| `InventoryBST` | `inOrder()` | `O(n)` | `O(n)` | `O(n)` for the sorted output |
+| `FreightPackageArray` | `add`, `get` | `O(1)` amortized | `O(n)` when it resizes | `O(n)` from doubling |
+| `QuickSort` | sort by weight or package no. | `O(n log n)` | `O(n²)` | `O(log n)` |
+| `InsertionSort` | sort by delivery speed or destination | `O(n²)`, close to `O(n)` if almost sorted | `O(n²)` | `O(1)`, sorts in place |
+
+---
+
+## 4. Business rules
+
+These are the rules the service layer enforces. Each one has an ID so we can point to it in the code and in the tests.
+
+| Rule | What it means | Where it is enforced |
+| :--- | :--- | :--- |
+| `BR-01` | A product code must be positive and unique. A duplicate is rejected. | `FulfillmentService.addProduct()`, `InventoryBST` |
+| `BR-02` | An order needs a product that exists, a quantity of at least 1, a valid customer name and destination (the pipe symbol `|` is not allowed), and a priority from 1 to 5. | `FulfillmentService.enqueueOrder()`, `Order` |
+| `BR-03` | Shipping checks first and changes things later (peek, validate, commit). The order only leaves the queue if the product exists, the stock covers the quantity and the weight is valid. Otherwise it stays in line, unless the user cancels it. | `FulfillmentService.dispatchNext()` |
+| `BR-04` | Real stock can never go below zero. | `Product.addStock()`, `Product.removeStock()` |
+| `BR-05` | A restock is all or nothing. The product must exist and the stack must not be full before anything is changed. | `FulfillmentService.restock()` |
+| `BR-06` | Undo subtracts the quantity that was added, but only if the current stock is at least that much. If not, the items were already shipped and the undo is blocked. | `FulfillmentService.undoRestock()` |
+| `BR-07` | Deleting a product needs confirmation and uses the three-case tree delete. Orders in the queue that point to a deleted product are flagged. | `CatalogPanel`, `FulfillmentService.deleteProduct()` |
+| `BR-08` | A shipment needs a valid dispatch. The service accepts weights from `0.01` to `1000.00 kg`, while the pop-up on screen only allows `0.01` to `50.00 kg`. | `FulfillmentService.dispatchNext()`, `FreightPackage` |
+| `BR-09` | Sorting only changes the package array. It never touches the tree, the queue or the stack. | `FulfillmentService.sortPackages()` |
+
+### How stock is reserved while an order is waiting
+The stock shown on screen is the **available stock**, not the number sitting on the shelf:
+
+`available = max(0, shelf stock minus the total quantity of waiting orders for that product)`
+
+This stops two customers from ordering the same last items. Here is an example with **Motorized Standing Desks**, which start at 8:
+1. **Place an order for all 8.** The Products screen drops from 8 to 0 and shows **Out of Stock**. Nobody else can order those 8.
+2. **Ship that order.** Shelf stock goes from 8 to 0 and the reservation goes from 8 to 0, so the screen still shows 0. Nothing is deducted twice.
+3. **Or cancel the order instead.** Shelf stock stays at 8, the reservation is cleared, and the screen goes back to 8 (shown as **Low Stock**, because 20 or under counts as low).
+
+---
+
+## 5. Diagrams and flowcharts
+
+### 5.1 How the classes fit together
+`MainFrame` holds the service, the sidebar and a card layout that switches between the four screens. It calls `FulfillmentService`, which owns the order queue, the restock stack, the product tree and the package array. Every service method returns an `OpResult` (success or failure, plus a message). The data structure classes and the sorts sit below the service, and the four model classes (`Product`, `Order`, `RestockAction` and `FreightPackage`) are what they store.
 
 ```mermaid
 classDiagram
     direction TB
-    class Main {
-        +main(String[] args)$
-    }
-    class MainFrame {
-        -FulfillmentService service
-        -SidebarPanel sidebarPanel
-        -CardLayout cardLayout
-        +showTab(int index)
-        +refreshAll()
-        +setFeedback(OpResult r)
-    }
-    class FulfillmentService {
-        -OrderQueue orderQueue
-        -RestockStack restockStack
-        -InventoryBST inventoryBst
-        -FreightPackageArray packageArray
-        +addProduct(int, String, double, int) OpResult
-        +findProduct(int skuId) Product
-        +getReservedQtyInQueue(int skuId) int
-        +getAvailableStock(int skuId) int
-        +deleteProduct(int skuId) OpResult
-        +enqueueOrder(...) OpResult
-        +dispatchNext(double weightKg) OpResult
-        +rejectFrontOrder() OpResult
-        +restock(int skuId, int qty) OpResult
-        +undoRestock() OpResult
-        +sortPackages(int algo, int criteria, boolean asc) OpResult
-    }
-    class OrderQueue {
-        -Order[] elements
-        -int front
-        -int rear
-        -int count
-        -int capacity
-        +enqueue(Order) boolean
-        +dequeue() Order
-        +peek() Order
-        +get(int logicalIndex) Order
-    }
-    class RestockStack {
-        -RestockAction[] elements
-        -int top
-        -int capacity
-        +push(RestockAction) boolean
-        +pop() RestockAction
-        +peek() RestockAction
-        +get(int indexFromTop) RestockAction
-    }
-    class InventoryBST {
-        -SKUNode root
-        -int size
-        +insert(Product) boolean
-        +search(int skuId) Product
-        +delete(int skuId) boolean
-        +inOrder() Product[]
-        +height() int
-    }
-    class SKUNode {
-        +Product product
-        +SKUNode left
-        +SKUNode right
-    }
-    class FreightPackageArray {
-        -FreightPackage[] data
-        -int count
-        +add(FreightPackage)
-        +get(int index) FreightPackage
-        +rawArray() FreightPackage[]
-    }
-    class QuickSort {
-        +sort(FreightPackage[], int count, SortCriteria, boolean asc)$
-    }
-    class InsertionSort {
-        +sort(FreightPackage[], int count, SortCriteria, boolean asc)$
-    }
-
-    Main --> MainFrame : launches
-    MainFrame --> FulfillmentService : calls business methods
+    MainFrame --> FulfillmentService
     FulfillmentService *-- OrderQueue
     FulfillmentService *-- RestockStack
     FulfillmentService *-- InventoryBST
     FulfillmentService *-- FreightPackageArray
-    FulfillmentService ..> QuickSort : algorithm 1
-    FulfillmentService ..> InsertionSort : algorithm 2
+    FulfillmentService ..> QuickSort
+    FulfillmentService ..> InsertionSort
     InventoryBST *-- SKUNode
 ```
 
-### 5.2 Algorithm 1: Order Dispatch (`Peek -> Validate -> Commit`)
+### 5.2 Three flows worth knowing
+
+- **Shipping an order (peek, validate, commit):**
+  1. The worker clicks **Ship Next Order**. If the queue is empty, we stop.
+  2. We look at the front order without removing it and find its product in the tree.
+  3. If the stock covers the quantity and the weight is valid, we take the stock off the shelf, remove the order from the queue, add a package to the shipments array and refresh the screens.
+  4. If not, we return an error message and the order stays where it was.
+
+- **Safe undo (`BR-06`):**
+  1. The worker clicks **Undo Last Restock**. If the stack is empty, we stop.
+  2. We look at the top entry and find its product.
+  3. If the current stock is at least the quantity that was added, we subtract it and pop the stack.
+  4. If not, the undo is blocked and the entry stays, because those units already shipped.
+
+- **Deleting from the tree:**  
+  We go left if the code is smaller and right if it is bigger until we find the node. Then:
+  - **Case 1, a leaf:** just remove it.
+  - **Case 2, one child:** connect the parent straight to that child.
+  - **Case 3, two children:** find the smallest node in the right subtree (the in-order successor), copy it into this node, then delete the successor from the right subtree.  
+  The size counter goes down only once, after the recursion finishes. When the successor is deleted, a separate dummy flag is passed along so that it does not count as a second removal.
 
 ```mermaid
 flowchart TD
-    S([Click 'Ship Next Order']) --> E{OrderQueue empty?}
-    E -->|Yes| E1[Return Error: Queue empty]
-    E -->|No| P[Peek front Order #front]
-    P --> L[Lookup SKU in InventoryBST]
-    L --> X{Product exists?}
-    X -->|No| X1[Block: SKU discontinued - Keep order]
-    X -->|Yes| Q{Physical Stock >= Order Qty?}
-    Q -->|No| Q1[Block: Insufficient stock - Keep order]
-    Q -->|Yes| W[Prompt Parcel Weight kg]
-    W --> WV{Valid finite weight?}
-    WV -->|No| W1[Block: Invalid weight - Keep order]
-    WV -->|Yes| C[1. Deduct physical stock\n2. Dequeue front order\n3. Add FreightPackage to FreightPackageArray\n4. Refresh UI tables & sidebar badges]
+    S([Click Ship Next Order]) --> E{Queue empty?}
+    E -->|Yes| ERR[Show queue empty message]
+    E -->|No| P[Peek front order and check BST]
+    P --> V{Product exists, stock >= qty, valid weight?}
+    V -->|No| FAIL[Return error; keep order in queue]
+    V -->|Yes| OK[Deduct stock, dequeue order, add FreightPackage]
 ```
 
-### 5.3 Algorithm 2: Restock & Anti-Lost-Update Undo (`BR-05` & `BR-06`)
+### 5.3 The two sorting flows
+- **QuickSort:** While `low` is less than `high`, pick a median-of-three pivot, split the range with Hoare partitioning, and break ties by sequence number. Then recurse on the smaller side and keep looping on the larger side.
+- **InsertionSort:** For each item from position 1 onward, hold it as the key and compare it with the items to its left. Shift a left item to the right only if it is strictly out of order. Then put the key in the gap. Equal items never move past each other, which is what keeps arrival order on ties.
 
 ```mermaid
 flowchart TD
-    R1([Submit Restock SKU + Qty]) --> R2{RestockStack full?}
-    R2 -->|Yes| RERR1[Block: Stack capacity 20 reached]
-    R2 -->|No| R3{SKU exists in BST?}
-    R3 -->|No| RERR2[Block: SKU not found]
-    R3 -->|Yes| R4[Add qty to Product + Push RestockAction]
-
-    U1([Click 'Undo Last Restock']) --> U2{RestockStack empty?}
-    U2 -->|Yes| UERR1[Block: No restock to undo]
-    U2 -->|No| U3[Peek top RestockAction]
-    U3 --> U4{Product still in BST?}
-    U4 -->|No| UDEL[Pop entry + warn SKU deleted]
-    U4 -->|Yes| U5{Physical Stock >= quantityAdded?}
-    U5 -->|No| UERR2[Block: Units already shipped! Entry stays]
-    U5 -->|Yes| U6[Subtract quantityAdded + Pop Stack]
+    I([InsertionSort i = 1..count-1]) --> K[key = arr i ; j = i - 1]
+    K --> C{j >= 0 and strict inversion vs key?}
+    C -->|Yes| SH[arr j+1 = arr j ; j--] --> C
+    C -->|No: ties keep arrival order| PL[Place key at arr j+1]
 ```
 
-### 5.4 Algorithm 3: BST 3-Case Deletion (`InventoryBST.deleteRecursive`)
-
-```mermaid
-flowchart TD
-    D([deleteRecursive node, skuId, deleted]) --> N{node == null?}
-    N -->|Yes| RN[Return null]
-    N -->|No| CMP{Compare skuId vs node.skuId}
-    CMP -->|"<"| DL[node.left = deleteRecursive left]
-    CMP -->|">"| DR[node.right = deleteRecursive right]
-    CMP -->|"=="| HIT[deleted 0 = true]
-    HIT --> C1{Both children null?}
-    C1 -->|Yes| RC1[Case 1 Leaf: Return null]
-    C1 -->|No| C2{Only 1 child null?}
-    C2 -->|Yes| RC2[Case 2 Bypass: Return non-null child]
-    C2 -->|No| RC3[Case 3 Two Children:\n1. Find min in right subtree\n2. Copy successor Product to node\n3. Delete successor with dummy flag]
-```
-
-### 5.5 Algorithm 4: QuickSort Hoare + Tail-Call Partitioning
-
-```mermaid
-flowchart TD
-    Q([quickSortHelper arr, low, high]) --> B{low < high?}
-    B -->|No| DONE([Done])
-    B -->|Yes| M[Pivot = Median-of-Three low, mid, high]
-    M --> P[Hoare Two-Pointer Partition\nReturns split index p]
-    P --> S{Left smaller than Right?}
-    S -->|Yes| L[Recurse low..p, loop low = p + 1] --> B
-    S -->|No| R[Recurse p+1..high, loop high = p] --> B
-```
-
-### 5.6 Algorithm 5: InsertionSort (Stable Priority & Destination Sort)
-
-```mermaid
-flowchart TD
-    I([InsertionSort.sort arr, count, criteria, asc]) --> LOOP[Loop i = 1 to count - 1]
-    LOOP --> KEY[key = arr i ; j = i - 1]
-    KEY --> CMP{j >= 0 AND strict inversion vs key?}
-    CMP -->|Yes| SHIFT[Shift arr j+1 = arr j ; j--] --> CMP
-    CMP -->|No: equal ties stay in arrival order| PLACE[Place arr j+1 = key]
-    PLACE --> NEXT{More elements?}
-    NEXT -->|Yes| LOOP
-    NEXT -->|No| IDONE([Sorted Stably In-Place])
-```
+*(See [`LogisticsHub-Documentation.pdf`](LogisticsHub-Documentation.pdf) for the rendered visual diagrams and screen captures.)*
 
 ---
 
-# Chapter 6: Complete User Guide (Step-by-Step Manual)
+## 6. User guide
 
-### 6.1 Navigation, Badges & Keyboard Shortcuts
-- **Launch:** Double-click `LogisticsHub.jar` (or run `run.bat`). Opens to **Products** by default (`1260×780` window).
-- **Left Sidebar Navigation:** Switch modules by clicking **Orders**, **Products**, **Restock**, or **Shipments**, or press **`Ctrl + 1`**, **`Ctrl + 2`**, **`Ctrl + 3`**, **`Ctrl + 4`**.
-- **Live Badge Counters:** Numbers on the sidebar (`Orders`, `Products`, `Restock`, `Shipments`) update automatically after every action.
-- **Technical details Checkbox:** Toggle this on at the bottom-left to show internal DSA metrics (`BST Height: 4 | Size: 14` on Products, `Seq #` on Restock & Shipments, and active sorting algorithm names `QuickSort (Hoare)` / `InsertionSort (Stable)`).
+Double-click `LogisticsHub.jar` (or run `run.bat`). You can move between screens with the sidebar on the left or with `Ctrl+1` (Orders), `Ctrl+2` (Products), `Ctrl+3` (Restock) and `Ctrl+4` (Shipments).
 
-### 6.2 Tab 1: Orders (`Order Fulfillment`)
-- **Initial State:** Starts cleanly with `0/20` waiting orders so the first order you create becomes **`#1001` (`NEXT`)**.
-- **Placing an Order (`+ Place Order`):**
-  1. Click **Place Order** to open the **Place New Order** popup.
-  2. Fill in **Customer Name** (must include letters), select a **Product** (dropdown displays live available units), enter **Quantity**, select **Delivery Speed** (`Express (fastest)`, `Standard` [default], or `Economy (slowest)`), and pick **Deliver To** (`Manila Central Hub`, `Quezon City Hub`, or `Makati Logistics Hub`).
-  3. Click **Place Order**. Out-of-stock (`0` available) or over-ordered quantities are blocked cleanly before queueing.
-- **Shipping the Next Order (`Ship Next Order`):**
-  1. Ships strictly the top (`NEXT`) row in FIFO order.
-  2. Prompts **Enter parcel weight in kg (`0.01 - 50.00 kg`)**.
-  3. On confirmation, deducts physical stock from `InventoryBST`, removes the order from `OrderQueue`, and creates a `PKG-5xx` record in **Shipments**.
-- **Cancelling the Next Order (`Cancel Next`):** Confirms cancellation of row `NEXT`, removes it from the queue without deducting physical stock, and restores the item's available count in **Products**.
+The **Technical details** checkbox at the bottom of the sidebar shows what is happening inside, like the BST height, the sequence numbers (`Seq #`) and the name of the sorting algorithm. Leave it off for normal use and turn it on during the defense.
 
-### 6.3 Tab 2: Products (`Product Management`)
-- **Starter Seed Catalog:** Loads 14 warehouse hardware/office products (`SKU 150` through `SKU 800`), priced in Philippine Pesos (`₱`).
-- **Filter Pills & Live Status Badges:**
-  - Header pills display live counts: **All**, **In Stock** (`available > 20`), and **Low / Out** (`available <= 20`).
-  - Table Status pills: green **In Stock** (`> 20`), amber **Low Stock** (`1–20`), red **Out of Stock** (`0`).
-- **In Stock Calculation:** Always shows **available unreserved stock** (`Physical - Queued`). Selecting a row displays a detailed footer note if units are reserved in waiting orders (e.g., `0 available (8 queued to ship)`).
-- **Searching (`Search` / Live Typing):** Type a numeric Product Code (triggers $O(\log n)$ BST search + binary row lookup) or partial name (250 ms live debounced highlight). Press `Enter` to jump immediately or `Esc` to clear.
-- **Refresh Button (`Refresh`):** Manually syncs all views and live stock counts at any time.
-- **Adding (`+ Add Product`) & Deleting (`Delete`):** Add unique positive numeric Product Codes (`AddProductDialog`), or select any product row and click **Delete** to remove it safely via 3-case BST deletion.
+### 6.1 Products (`Ctrl+2`)
+- Filter pills at the top show counts for **All**, **In Stock** (more than 20) and **Low / Out** (20 or less).
+- The stock column shows available stock, which is shelf stock minus whatever is in waiting orders. The status labels are **In Stock** (more than 20), **Low Stock** (1 to 20) and **Out of Stock** (0).
+- **Search:** Type a product code or part of a name. A code uses the tree, and a name is matched as you type. Press `Enter` to highlight a result, press `Esc` to clear, or click **Refresh** to update the counts.
+- **Add Product:** Click **+ Add Product** and enter a unique code, a name, a price in pesos and the starting stock.
+- **Delete:** Select a row and click **Delete**. The app asks you to confirm first.
 
-### 6.4 Tab 3: Restock (`Inventory Restock Audit`)
-- **Starter Audit Stack:** Pre-loaded with 2 historical restocks (`Restock #1`: Mouse `+20`, `Restock #2`: Keyboard `+15`).
-- **Adding Stock (`+ Add Stock`):** Select any product, enter quantity to add, and commit. Increases physical stock immediately and pushes row `1` (`#Action`) to the top of the LIFO table.
-- **Reversing Mistakes (`Undo Last Restock`):** Reverts only the newest restock action (`row 0`), blocking rollback safely if those units have already been shipped.
+### 6.2 Orders (`Ctrl+1`)
+- The queue starts empty (`0/20`), so the first order you place is **`#1001`** and it is marked **NEXT**.
+- **Place Order:** Click **+ Place Order**, then type the customer name, choose a product (the pop-up shows how many are available), set the quantity, pick a Delivery Speed (**Express** is fastest, **Standard** is the default, **Economy** is slowest) and choose where it goes: **Manila Central Hub**, **Quezon City Hub** or **Makati Logistics Hub**.
+- **Ship Next Order:** Checks that there is enough stock, asks for the parcel weight (`0.01` to `50.00 kg`), takes the items off the shelf and sends a package to **Shipments**.
+- **Cancel Next:** Removes the order at the front and frees up the stock that was held for it.
+- Under the table, a counter shows how many orders are waiting out of 20.
 
-### 6.5 Tab 4: Shipments (`Shipment Dispatch & Logistics`)
-- **Starter Dispatched Manifest:** Includes 5 initial shipped packages (`PKG-501`–`PKG-505` for orders `#991`–`#995`) plus every parcel dispatched in the current session.
-- **Sorting Controls:**
-  - **Sort by Weight:** Runs custom **QuickSort** (**Lightest First** / **Heaviest First**).
-  - **Sort by Delivery Speed:** Runs stable **InsertionSort** (**Fastest First** / **Slowest First**), keeping equal-speed shipments in arrival order.
-  - **Direction Toggle Button:** Flips ascending vs descending for whichever sort mode is active.
-  - **Clickable Column Headers:** Click **Package No.**, **Deliver To**, **Weight**, or **Delivery Speed** headers directly to re-sort without using Swing's built-in sorter.
+### 6.3 Restock (`Ctrl+3`)
+- **Add Stock:** Pick a product, enter how many arrived (`10` by default) and submit. The shelf stock goes up and the new entry appears at the top of the list.
+- **Undo Last Restock:** Asks you to confirm, then takes the top entry back out by subtracting what it added. If those units were already shipped, the app blocks the undo and tells you why.
+
+### 6.4 Shipments (`Ctrl+4`)
+- **Sort by Weight** uses `QuickSort`. The direction button switches between **Lightest First** and **Heaviest First**.
+- **Sort by Delivery Speed** uses `InsertionSort`. The direction button switches between **Fastest First** and **Slowest First**. Packages with the same speed stay in the order they were shipped.
+- You can also click a column header (**Package No.**, **Deliver To**, **Weight** or **Delivery Speed**) to sort by it.
+
+### 6.5 When something goes wrong
+
+| What the user did | What the app does |
+| :--- | :--- |
+| Entered a duplicate product code, an empty name, a customer name made only of numbers, or a quantity of zero or less | Rejects it with a message. For a duplicate code the message reads: `SKU ID #... already exists (BR-01)`. |
+| Ordered more than the available stock, or tried to ship an order bigger than the stock | Blocks it. The orders already waiting stay safely in line. |
+| Tried to add to a queue or stack that is already full (20 of 20) | Tells the operator it is full. Older orders and restock entries are never overwritten. |
+| Tried to undo a restock after those units were shipped | Blocks the undo and shows the current stock against what is needed. The message reads: `Cannot undo: units have already been shipped/dispatched!`. |
 
 ---
 
-# Chapter 7: Testing, Compliance Verification & Team Defense Guide
+## 7. Testing and our defense
 
-### 7.1 Automated Test Suites (`test/`)
-All 6 test classes compile cleanly under `javac --release 17` and run with zero third-party test libraries:
-1. **`LinearADTTest`:** Circular queue wrap-around (`enqueue`/`dequeue`/`get`), LIFO stack ordering, overflow/underflow boundaries.
-2. **`BSTTest`:** Recursive insertion, `O(log n)` lookup, sorted in-order traversal, Case 1/2/3 node deletions, and Double-Decrement Guard.
-3. **`SortTest`:** Ascending/descending QuickSort by weight, stack-overflow resilience on 20,000 identical weights, and InsertionSort arrival-order stability on equal priority.
-4. **`ServiceTest`:** Business rule validation (`BR-01` through `BR-09`), atomic dispatch, insufficient-stock queue protection, safe subtraction undo (`BR-06`), and BST isolation on sort (`BR-09`).
-5. **`FullSystemCheckupTest`:** End-to-end verification across seed integrity (`14` products, `0` starter orders, `2` restocks, `5` shipments), FIFO lifecycle, capacity `20` overflow, live queued-stock reservation (`8 -> 0 -> 8 -> 0`), sorting invariants, and Swing `AbstractTableModel` non-editability & caching.
-6. **`UltimatePerformanceTest`:** Stress benchmarks covering 2,000,000 circular queue operations, 2,000,000 stack operations, 10,000 BST inserts & 100,000 lookups, 50,000 identical-weight QuickSort stress test, and 5,000-parcel stable InsertionSort.
+### 7.1 Tests
+We wrote six standalone Java test programs. All of them compile with `javac --release 17` and pass.
 
-### 7.2 10-Minute Team Presentation Flow
-| Segment | Presenter | Live Actions & Key Points |
+| Test program | What it checks |
+| :--- | :--- |
+| `LinearADTTest` | Queue wrap-around and capacity limits, first-in-first-out order, stack last-in-first-out order, and overflow and underflow guards. |
+| `BSTTest` | Recursive insert, search, sorted in-order traversal, all three delete cases, and the size not being reduced twice. |
+| `SortTest` | QuickSort ascending and descending, 20,000 equal weights without a stack overflow, and InsertionSort keeping ties in order. |
+| `ServiceTest` | Rules `BR-01` to `BR-09`, shipping that happens fully or not at all, not enough stock, safe undo (`BR-06`), and the tree staying untouched by sorting (`BR-09`). |
+| `FullSystemCheckupTest` | The empty starting queue, orders `#1001` and `#1002` through their full life, the Standing Desk reservation (`8` to `0` to `8` to `0`), and tables that cannot be edited and cache their data. |
+| `UltimatePerformanceTest` | Speed checks: 2 million queue operations, 2 million stack operations, 10,000 tree inserts with 100,000 lookups, QuickSort on 50,000 equal weights, and InsertionSort on 5,000 items. |
+
+### 7.2 Our 10-minute defense plan
+
+| Time | Who | What we show and say |
 | :--- | :--- | :--- |
-| **0:00 – 1:30** | **UI/UX & Integration Lead** | Launch `LogisticsHub.jar` outside IDE; explain 4-module App Shell, Java 17 LTS, zero third-party libraries, and clean service boundary (`FulfillmentService` + `OpResult`). |
-| **1:30 – 3:30** | **Hierarchical BST Dev** | On **Products**, enable **Technical details** to show `BST Height: 4 \| Size: 14`. Search by code (`300`) and name (`Desk`), add a new SKU, and demonstrate Case 1 & Case 3 deletion. |
-| **3:30 – 6:00** | **Linear ADT Dev** | Switch to **Orders** (`0/20`), place two new orders (`#1001 NEXT`, `#1002`), show **Products** updating available stock live, ship `#1001`, switch to **Restock**, add stock, and demonstrate Safe Undo (`BR-06`). |
-| **6:00 – 8:00** | **Sorting Engine Dev** | Switch to **Shipments**, sort with **Sort by Weight** (QuickSort Hoare + median-of-three) and **Sort by Delivery Speed** (stable InsertionSort), toggle direction, and click column headers directly. |
-| **8:00 – 10:00** | **QA & Docs Lead / Team** | Walk through Flowcharts & Business Rules (`BR-01`–`BR-09`), show compliance scan + test suite execution, and answer Q&A. |
+| **0:00 to 1:30** | UI/UX and Integration Lead | Open `LogisticsHub.jar` outside the IDE. Introduce the four screens, Java 17, no outside libraries, and how `FulfillmentService` keeps the screens separate from the data structures. |
+| **1:30 to 3:30** | Hierarchical BST Dev | Turn on **Technical details** on **Products** (`BST Height: 4, Size: 14`). Search by code and by name, add a product, then delete to show Case 1 and Case 3. |
+| **3:30 to 6:00** | Linear ADT Dev | On **Orders**, place 2 orders (`#1001` is NEXT). Show the stock changing on **Products**. Ship `#1001`, add stock on **Restock**, then test the safe undo. |
+| **6:00 to 8:00** | Sorting Engine Dev | On **Shipments**, click **Sort by Weight** (`QuickSort`), then **Sort by Delivery Speed** (`InsertionSort`), flip the direction, and click the column headers. |
+| **8:00 to 10:00** | QA and Docs Lead, with everyone | Walk through the class diagram, the shipping and undo flowcharts and the compliance check output. Then take the professor's questions. |
 
-### 7.3 Professor Q&A Cheat Sheet
-1. **Why use a circular array for `OrderQueue` instead of shifting elements?** Shifting takes $O(n)$ per dequeue; `(front + 1) % capacity` and `(rear + 1) % capacity` keep both enqueue and dequeue at strict $O(1)$ time with zero wasted slots.
-2. **Why `left < root < right` instead of `left <= root < right`?** Product SKU codes are unique primary keys (`BR-01`). Allowing duplicate keys would corrupt stock counts across duplicate nodes, so duplicates are explicitly rejected.
-3. **Why does Safe Undo subtract `quantityAdded` instead of saving an old stock snapshot?** Snapshot rollback causes Lost Updates whenever customer dispatches happen between a restock and an undo (`50` added -> `5` shipped -> restoring old snapshot erases the sale). Subtracting `quantityAdded` preserves shipped deductions and blocks unsafe rollbacks (`BR-06`).
-4. **Why QuickSort for Weight and InsertionSort for Delivery Speed?** Weight uses continuous floating-point numbers suited for divide-and-conquer $O(n \log n)$ QuickSort (with Hoare partitioning + median-of-three + tail-call recursion to guard stack depth). Delivery Speed has only 3 discrete urgency tiers, where **InsertionSort guarantees stability** so equal-urgency shipments preserve arrival sequence.
-5. **How did you avoid Java Collections completely?** Every ADT (`OrderQueue`, `RestockStack`, `InventoryBST`, `FreightPackageArray`) and sort comparator (`SortCriteria`) uses raw arrays, explicit node links, and custom functional interfaces, enforced by an automated regex compliance check before every build.
+### 7.3 Questions the professor may ask
+
+- **Q1. Why use a circular array for the order queue instead of shifting items forward after each dequeue?**  
+  If we shift every item forward after each shipment, the work grows with the number of waiting orders, which is `O(n)`. With `(front + 1) % 20` and `(rear + 1) % 20`, the freed slots get reused, so enqueue, dequeue and peek all stay `O(1)`.
+- **Q2. Why `left < root < right` and not `left <= root < right`?**  
+  A product code identifies one product. If we allowed duplicates, the same product would sit in several nodes and its stock would be split up. So we reject duplicates (`BR-01`).
+- **Q3. Why does undo subtract the quantity instead of restoring the old stock number?**  
+  A saved number would wipe out any shipments made after the restock. That is a lost update. Subtracting keeps those shipments, and if there is not enough stock left, the undo is blocked (`BR-06`).
+- **Q4. Why QuickSort for weight and InsertionSort for delivery speed?**  
+  Weight has many different decimal values, so a fast divide-and-conquer sort fits. We protected it with a median-of-three pivot and by recursing on the smaller half. Delivery speed has only a few levels with many ties, and InsertionSort is stable, so ties keep their arrival order.
+- **Q5. Why doesn't Case 3 deletion reduce the tree size twice?**  
+  In Case 3 we copy the successor into the node and then delete the successor from the right subtree. That second delete gets a separate dummy flag, so the size goes down only once, for the one real removal.
