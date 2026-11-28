@@ -38,6 +38,7 @@ public class PlaceOrderDialog extends JDialog {
     private JButton btnPlace;
     private boolean orderPlaced = false;
     private boolean submitting = false;
+    private boolean refreshingProducts = false;
 
     public PlaceOrderDialog(Frame parent, FulfillmentService service, MainFrame mainFrame) {
         super(parent, "Place Order", true);
@@ -134,6 +135,11 @@ public class PlaceOrderDialog extends JDialog {
 
         txtCustomer.addActionListener(e -> submit());
         txtQuantity.addActionListener(e -> submit());
+        cmbProduct.addActionListener(e -> {
+            if (!refreshingProducts && lblError != null) {
+                lblError.setText(" ");
+            }
+        });
 
         g.gridy = 0; g.gridx = 0; g.weightx = 1.0;
         body.add(createFieldLabel("Customer Name *", "Recipient full name"), g);
@@ -202,14 +208,28 @@ public class PlaceOrderDialog extends JDialog {
     }
 
     private void loadProducts() {
-        cmbProduct.removeAllItems();
-        Product[] products = service.getInventoryBst().inOrder();
-        if (products != null) {
-            for (int i = 0; i < products.length; i++) {
-                Product p = products[i];
-                int available = service.getAvailableStock(p.getSkuId());
-                cmbProduct.addItem(new OrdersPanel.ProductComboItem(p.getSkuId(), p.getName(), available));
+        OrdersPanel.ProductComboItem prev = (OrdersPanel.ProductComboItem) cmbProduct.getSelectedItem();
+        int selectedSkuId = prev != null ? prev.getSkuId() : -1;
+        refreshingProducts = true;
+        try {
+            cmbProduct.removeAllItems();
+            Product[] products = service.getInventoryBst().inOrder();
+            int restoreIndex = 0;
+            if (products != null) {
+                for (int i = 0; i < products.length; i++) {
+                    Product p = products[i];
+                    int available = service.getAvailableStock(p.getSkuId());
+                    cmbProduct.addItem(new OrdersPanel.ProductComboItem(p.getSkuId(), p.getName(), available));
+                    if (p.getSkuId() == selectedSkuId) {
+                        restoreIndex = i;
+                    }
+                }
             }
+            if (cmbProduct.getItemCount() > 0) {
+                cmbProduct.setSelectedIndex(restoreIndex);
+            }
+        } finally {
+            refreshingProducts = false;
         }
     }
 
@@ -262,12 +282,16 @@ public class PlaceOrderDialog extends JDialog {
 
         int liveAvailable = service.getAvailableStock(selectedProduct.getSkuId());
         if (liveAvailable <= 0) {
-            loadProducts();
+            if (selectedProduct.getStock() != liveAvailable) {
+                loadProducts();
+            }
             lblError.setText(selectedProduct.getName() + " is out of stock (all units are reserved or depleted).");
             return;
         }
         if (quantity > liveAvailable) {
-            loadProducts();
+            if (selectedProduct.getStock() != liveAvailable) {
+                loadProducts();
+            }
             lblError.setText("Only " + liveAvailable + " unreserved units available in stock.");
             return;
         }
