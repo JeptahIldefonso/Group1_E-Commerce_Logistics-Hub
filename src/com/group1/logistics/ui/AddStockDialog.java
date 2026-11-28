@@ -152,13 +152,22 @@ public class AddStockDialog extends JDialog {
     }
 
     private void loadProducts() {
+        OrdersPanel.ProductComboItem prev = (OrdersPanel.ProductComboItem) cmbProduct.getSelectedItem();
+        int selectedSkuId = prev != null ? prev.getSkuId() : -1;
         cmbProduct.removeAllItems();
         Product[] products = service.getInventoryBst().inOrder();
+        int restoreIndex = 0;
         if (products != null) {
             for (int i = 0; i < products.length; i++) {
                 Product p = products[i];
                 cmbProduct.addItem(new OrdersPanel.ProductComboItem(p.getSkuId(), p.getName(), p.getStockQty()));
+                if (p.getSkuId() == selectedSkuId) {
+                    restoreIndex = i;
+                }
             }
+        }
+        if (cmbProduct.getItemCount() > 0) {
+            cmbProduct.setSelectedIndex(restoreIndex);
         }
     }
 
