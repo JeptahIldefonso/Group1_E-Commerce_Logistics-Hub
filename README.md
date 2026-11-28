@@ -14,7 +14,7 @@ Each screen in the left sidebar handles one daily warehouse job and demonstrates
 | Tab (Shortcut) | Daily Warehouse Job | Underlying Data Structure / Algorithm |
 | :--- | :--- | :--- |
 | **Orders** (`Ctrl+1`) | Queue incoming customer orders, ship the front order with weight check, or cancel without losing stock accuracy | **Circular Array Queue (`OrderQueue`)** — FIFO wrap-around carousel (capacity 20), *O(1)* enqueue/dequeue |
-| **Products** (`Ctrl+2`) | View catalog sorted by product code, search by code or name, add new items, or discontinue old ones | **Binary Search Tree (`InventoryBST` + `SKUNode`)** — recursive insert, iterative search, in-order traversal, 3-case delete |
+| **Products** (`Ctrl+2`) | View catalog sorted by product code or by **In Stock** ascending/descending to spot low-stock items quickly, search by code or name, add new items, or discontinue old ones | **Binary Search Tree (`InventoryBST` + `SKUNode`)** — recursive insert, iterative search, in-order traversal, 3-case delete + view sort |
 | **Restock** (`Ctrl+3`) | Log incoming supplier deliveries and safely undo the newest restock mistake | **LIFO Array Stack (`RestockStack`)** — *O(1)* push/pop + anti-lost-update subtraction undo (`BR-06`) |
 | **Shipments** (`Ctrl+4`) | Re-order dispatched parcels by parcel weight, delivery speed, package number, or destination hub | **Dynamic Array (`FreightPackageArray`) + Custom Sorters** — Hoare `QuickSort` (weight/ID) & stable `InsertionSort` (speed/hub) |
 

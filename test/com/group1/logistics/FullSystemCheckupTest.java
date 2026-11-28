@@ -299,6 +299,36 @@ public class FullSystemCheckupTest {
                 "Physical and available stock both settle cleanly at 0 after dispatch");
         check("Out of Stock".equals(liveCatalog.getValueAt(deskRow, 4)), "Status remains Out of Stock after dispatch");
 
+        liveCatalog.setSortMode(CatalogTableModel.SORT_BY_STOCK_ASC);
+        check(liveCatalog.getProductAt(0).getSkuId() == 800 && liveCatalog.getAvailableStockAt(0) == 0,
+                "Stock ascending places 0-stock SKU #800 at top row");
+        check(liveCatalog.findRowBySkuId(800) == 0, "findRowBySkuId locates SKU #800 accurately while sorted ascending");
+        boolean stockAscOk = true;
+        for (int i = 0; i < liveCatalog.getRowCount() - 1; i++) {
+            if (liveCatalog.getAvailableStockAt(i) > liveCatalog.getAvailableStockAt(i + 1)) {
+                stockAscOk = false;
+                break;
+            }
+        }
+        check(stockAscOk, "Catalog rows strictly non-decreasing when sorted by In Stock ascending");
+
+        liveCatalog.setSortMode(CatalogTableModel.SORT_BY_STOCK_DESC);
+        int lastRow = liveCatalog.getRowCount() - 1;
+        check(liveCatalog.getProductAt(0).getSkuId() == 550 && liveCatalog.getAvailableStockAt(0) == 100,
+                "Stock descending places highest-stock SKU #550 (100) at top row");
+        check(liveCatalog.findRowBySkuId(800) == lastRow, "findRowBySkuId locates 0-stock SKU #800 at bottom row when descending");
+        boolean stockDescOk = true;
+        for (int i = 0; i < liveCatalog.getRowCount() - 1; i++) {
+            if (liveCatalog.getAvailableStockAt(i) < liveCatalog.getAvailableStockAt(i + 1)) {
+                stockDescOk = false;
+                break;
+            }
+        }
+        check(stockDescOk, "Catalog rows strictly non-increasing when sorted by In Stock descending");
+
+        liveCatalog.setSortMode(CatalogTableModel.SORT_BY_SKU_ASC);
+        check(liveCatalog.getProductAt(0).getSkuId() == 150, "Restoring By Code sort returns SKU #150 to row 0 (BST intact)");
+
         Path tempDir = null;
         try {
             tempDir = Files.createTempDirectory("lhub_full_persist");

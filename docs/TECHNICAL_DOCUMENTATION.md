@@ -206,6 +206,7 @@ The **Technical details** checkbox at the bottom of the sidebar shows what is ha
 ### 6.1 Products (`Ctrl+2`)
 - Filter pills at the top show counts for **All**, **In Stock** (more than 20) and **Low / Out** (20 or less).
 - The stock column shows available stock, which is shelf stock minus whatever is in waiting orders. The status labels are **In Stock** (more than 20), **Low Stock** (1 to 20) and **Out of Stock** (0).
+- **Sort by In Stock:** Click **Stock: Low to High** (ascending, fewest first to spot out-of-stock or low-stock items), **Stock: High to Low** (descending), or **By Code** (default BST order), or click the **In Stock** / **Product Code** column headers directly without changing `InventoryBST`.
 - **Search:** Type a product code or part of a name. A code uses the tree, and a name is matched as you type. Press `Enter` to highlight a result, press `Esc` to clear, or click **Refresh** to update the counts.
 - **Add Product:** Click **+ Add Product** and enter a unique code, a name, a price in pesos and the starting stock.
 - **Delete:** Select a row and click **Delete**. The app asks you to confirm first.
