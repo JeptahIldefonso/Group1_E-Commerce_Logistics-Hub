@@ -57,7 +57,7 @@ DSAjava/
 ## Business Rules (`BR-01` to `BR-09`)
 
 1. **`BR-01` Unique Product Codes:** Positive integer SKU IDs only; duplicates are rejected (`left < root < right`).
-2. **`BR-02` Valid Orders:** Orders require an existing SKU, quantity `>= 1`, non-empty customer name and hub (no `|`), and priority `1..5` (the modal offers **Express**, **Standard**, and **Economy** across **Manila Central Hub**, **Quezon City Hub**, and **Makati Logistics Hub**).
+2. **`BR-02` Valid Orders:** Orders require an existing SKU, quantity `>= 1` within available unreserved stock, non-empty customer name and hub (no `|`), and priority `1..5` (the modal offers **Express**, **Standard**, and **Economy** across **Manila Central Hub**, **Quezon City Hub**, and **Makati Logistics Hub**).
 3. **`BR-03` Peek -> Validate -> Commit:** Shipping checks SKU existence, physical stock, and parcel weight before removing the front order from `OrderQueue`.
 4. **`BR-04` Non-Negative Stock:** Physical `stockQty` can never drop below zero.
 5. **`BR-05` Atomic Restock:** Validates SKU existence and `!restockStack.isFull()` before modifying stock or stack.

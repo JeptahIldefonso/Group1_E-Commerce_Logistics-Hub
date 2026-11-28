@@ -104,7 +104,7 @@ These are the rules the service layer enforces. Each one has an ID so we can poi
 | Rule | What it means | Where it is enforced |
 | :--- | :--- | :--- |
 | `BR-01` | A product code must be positive and unique. A duplicate is rejected. | `FulfillmentService.addProduct()`, `InventoryBST` |
-| `BR-02` | An order needs a product that exists, a quantity of at least 1, a valid customer name and destination (the pipe symbol `|` is not allowed), and a priority from 1 to 5. | `FulfillmentService.enqueueOrder()`, `Order` |
+| `BR-02` | An order needs a product that exists, a quantity of at least 1 within available unreserved stock, a valid customer name and destination (the pipe symbol `|` is not allowed), and a priority from 1 to 5. | `FulfillmentService.enqueueOrder()`, `Order` |
 | `BR-03` | Shipping checks first and changes things later (peek, validate, commit). The order only leaves the queue if the product exists, the stock covers the quantity and the weight is valid. Otherwise it stays in line, unless the user cancels it. | `FulfillmentService.dispatchNext()` |
 | `BR-04` | Real stock can never go below zero. | `Product.addStock()`, `Product.removeStock()` |
 | `BR-05` | A restock is all or nothing. The product must exist and the stack must not be full before anything is changed. | `FulfillmentService.restock()` |

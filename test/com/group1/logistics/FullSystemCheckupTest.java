@@ -255,6 +255,9 @@ public class FullSystemCheckupTest {
         check(service.getAvailableStock(800) == 8, "Motorized Standing Desk (SKU #800) starts with 8 available");
         OpResult reserveDesk = service.enqueueOrder("Test Buyer", 800, 8, "Manila Central Hub", 1);
         check(reserveDesk.isSuccess(), "Queued order for all 8 units of SKU #800");
+        OpResult doubleDesk = service.enqueueOrder("Second Buyer", 800, 8, "Manila Central Hub", 1);
+        check(!doubleDesk.isSuccess(), "Second 8-unit order for SKU #800 blocked while first is queued");
+        check(service.getReservedQtyInQueue(800) == 8, "Reserved quantity for SKU #800 stays capped at 8");
         CatalogTableModel liveCatalog = new CatalogTableModel(service.getInventoryBst(), service);
         int deskRow = liveCatalog.findRowBySkuId(800);
         check(service.getAvailableStock(800) == 0, "Available stock for SKU #800 drops immediately to 0 when queued");
