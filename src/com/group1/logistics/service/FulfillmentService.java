@@ -13,20 +13,60 @@ import com.group1.logistics.sorting.PackageCriteria;
 import com.group1.logistics.sorting.QuickSort;
 import com.group1.logistics.sorting.SortCriteria;
 
+import java.io.File;
+import java.io.IOException;
+
 public class FulfillmentService {
-    private final OrderQueue orderQueue;
-    private final RestockStack restockStack;
-    private final InventoryBST inventoryBst;
-    private final FreightPackageArray packageArray;
+    private static final int QUEUE_CAPACITY = 20;
+    private static final int STACK_CAPACITY = 20;
+
+    private OrderQueue orderQueue;
+    private RestockStack restockStack;
+    private InventoryBST inventoryBst;
+    private FreightPackageArray packageArray;
 
     private int nextOrderId;
     private int nextActionId;
     private int nextPackageId;
     private int sequenceCounter;
 
+    private final File storageFile;
+    private boolean persistenceSuspended;
+    private String startupNotice;
+    private String lastPersistenceError;
+
     public FulfillmentService() {
-        this.orderQueue = new OrderQueue(20);
-        this.restockStack = new RestockStack(20);
+        this((File) null);
+    }
+
+    public FulfillmentService(File storageFile) {
+        this.storageFile = storageFile;
+        this.persistenceSuspended = false;
+
+        if (storageFile != null) {
+            FulfillmentStorage.LoadResult loaded = FulfillmentStorage.load(storageFile, QUEUE_CAPACITY, STACK_CAPACITY);
+            this.startupNotice = loaded.notice;
+            if (loaded.loaded) {
+                this.inventoryBst = loaded.bst;
+                this.orderQueue = loaded.queue;
+                this.restockStack = loaded.stack;
+                this.packageArray = loaded.packages;
+                this.nextOrderId = loaded.nextOrderId;
+                this.nextActionId = loaded.nextActionId;
+                this.nextPackageId = loaded.nextPackageId;
+                this.sequenceCounter = loaded.sequenceCounter;
+                return;
+            }
+        }
+
+        initFreshStructures();
+        loadDefaultSeedData();
+        persistState();
+    }
+
+    private void initFreshStructures() {
+        this.orderQueue = new OrderQueue(QUEUE_CAPACITY);
+        this.restockStack = new RestockStack(STACK_CAPACITY);
         this.inventoryBst = new InventoryBST();
         this.packageArray = new FreightPackageArray(16);
 
@@ -34,8 +74,30 @@ public class FulfillmentService {
         this.nextActionId = 1;
         this.nextPackageId = 501;
         this.sequenceCounter = 1;
+    }
 
-        loadDefaultSeedData();
+    private boolean persistState() {
+        if (storageFile == null || persistenceSuspended) {
+            return true;
+        }
+        try {
+            FulfillmentStorage.save(storageFile, this);
+            this.lastPersistenceError = null;
+            return true;
+        } catch (IOException ex) {
+            this.lastPersistenceError = ex.getMessage();
+            return false;
+        }
+    }
+
+    private OpResult finalizeMutation(OpResult result) {
+        if (result == null || !result.isSuccess()) {
+            return result;
+        }
+        if (!persistState()) {
+            return OpResult.ok(result.getMessage() + " (Warning: local auto-save failed)");
+        }
+        return result;
     }
 
     public OpResult addProduct(int skuId, String name, double price, int stockQty) {
@@ -60,7 +122,7 @@ public class FulfillmentService {
         if (!inserted) {
             return OpResult.err("SKU ID #" + skuId + " already exists in the catalog (BR-01).");
         }
-        return OpResult.ok("Product '" + product.getName() + "' (SKU #" + skuId + ") added successfully.");
+        return finalizeMutation(OpResult.ok("Product '" + product.getName() + "' (SKU #" + skuId + ") added successfully."));
     }
 
     public Product findProduct(int skuId) {
@@ -115,7 +177,7 @@ public class FulfillmentService {
         }
         boolean deleted = inventoryBst.delete(skuId);
         if (deleted) {
-            return OpResult.ok("SKU #" + skuId + " has been successfully removed from catalog (BR-07).");
+            return finalizeMutation(OpResult.ok("SKU #" + skuId + " has been successfully removed from catalog (BR-07)."));
         }
         return OpResult.err("SKU #" + skuId + " not found in catalog.");
     }
@@ -157,7 +219,7 @@ public class FulfillmentService {
 
         Order order = new Order(nextOrderId++, customerName, skuId, quantity, destination, priority, sequenceCounter++);
         orderQueue.enqueue(order);
-        return OpResult.ok("Order #" + order.getOrderId() + " (" + order.getCustomerName() + ") queued successfully.");
+        return finalizeMutation(OpResult.ok("Order #" + order.getOrderId() + " (" + order.getCustomerName() + ") queued successfully."));
     }
 
     public OpResult dispatchNext(double weightKg) {
@@ -194,8 +256,8 @@ public class FulfillmentService {
         );
         packageArray.add(pkg);
 
-        return OpResult.ok("Dispatched Order #" + dispatchedOrder.getOrderId() + " -> Created PKG-" + pkg.getPackageId() +
-                " (" + String.format("%.2f", weightKg) + " kg). Stock remaining: " + product.getStockQty());
+        return finalizeMutation(OpResult.ok("Dispatched Order #" + dispatchedOrder.getOrderId() + " -> Created PKG-" + pkg.getPackageId() +
+                " (" + String.format("%.2f", weightKg) + " kg). Stock remaining: " + product.getStockQty()));
     }
 
     public OpResult rejectFrontOrder() {
@@ -203,7 +265,7 @@ public class FulfillmentService {
             return OpResult.err("Order Queue is empty.");
         }
         Order rejected = orderQueue.dequeue();
-        return OpResult.ok("Order #" + rejected.getOrderId() + " (SKU #" + rejected.getSkuId() + ") was rejected and removed from queue.");
+        return finalizeMutation(OpResult.ok("Order #" + rejected.getOrderId() + " (SKU #" + rejected.getSkuId() + ") was rejected and removed from queue."));
     }
 
     public OpResult restock(int skuId, int quantityAdded) {
@@ -226,7 +288,7 @@ public class FulfillmentService {
         RestockAction action = new RestockAction(nextActionId++, skuId, quantityAdded, sequenceCounter++);
         restockStack.push(action);
 
-        return OpResult.ok("Restocked +" + quantityAdded + " units to SKU #" + skuId + ". New stock: " + product.getStockQty());
+        return finalizeMutation(OpResult.ok("Restocked +" + quantityAdded + " units to SKU #" + skuId + ". New stock: " + product.getStockQty()));
     }
 
     public OpResult undoRestock() {
@@ -239,7 +301,7 @@ public class FulfillmentService {
 
         if (product == null) {
             restockStack.pop();
-            return OpResult.ok("Restocked SKU #" + topAction.getSkuId() + " was deleted from catalog. Discarded audit entry.");
+            return finalizeMutation(OpResult.ok("Restocked SKU #" + topAction.getSkuId() + " was deleted from catalog. Discarded audit entry."));
         }
 
         if (product.getStockQty() < topAction.getQuantityAdded()) {
@@ -250,8 +312,8 @@ public class FulfillmentService {
         product.removeStock(topAction.getQuantityAdded());
         RestockAction popped = restockStack.pop();
 
-        return OpResult.ok("Undone Action #" + popped.getActionId() + ": Subtracted " + popped.getQuantityAdded() +
-                " units from SKU #" + popped.getSkuId() + ". Restored stock: " + product.getStockQty());
+        return finalizeMutation(OpResult.ok("Undone Action #" + popped.getActionId() + ": Subtracted " + popped.getQuantityAdded() +
+                " units from SKU #" + popped.getSkuId() + ". Restored stock: " + product.getStockQty()));
     }
 
     public OpResult sortPackages(int algorithm, int criteriaType, boolean asc) {
@@ -293,46 +355,59 @@ public class FulfillmentService {
             InsertionSort.sort(packageArray.rawArray(), packageArray.size(), criteria, asc);
         }
 
-        return OpResult.ok("Sorted " + packageArray.size() + " packages by " + criteriaName +
-                " using " + algoName + " (" + (asc ? "Ascending" : "Descending") + ").");
+        return finalizeMutation(OpResult.ok("Sorted " + packageArray.size() + " packages by " + criteriaName +
+                " using " + algoName + " (" + (asc ? "Ascending" : "Descending") + ")."));
+    }
+
+    public OpResult resetToDefaultSeedData() {
+        initFreshStructures();
+        loadDefaultSeedData();
+        this.startupNotice = null;
+        return finalizeMutation(OpResult.ok("Sample data restored to defaults."));
     }
 
     public void loadDefaultSeedData() {
-        int[] skuIds = {500, 300, 700, 200, 400, 600, 800, 150, 250, 350, 450, 550, 650, 750};
-        String[] names = {
-                "Pro Mechanical Keyboard", "Wireless Ergonomic Mouse", "4K Ultra-HD Monitor 27\"",
-                "USB-C Multiport Hub", "Ergonomic Desk Mat XL", "Noise-Cancelling Headset",
-                "Motorized Standing Desk", "1080p Streaming Webcam", "High-Speed HDMI Cable",
-                "Vertical Laptop Stand", "RGB Gaming Mousepad", "Screen Cleaning Kit",
-                "Laptop Cooling Pad", "Dual Monitor Arm Mount"
-        };
-        double[] prices = {
-                3499.00, 1250.00, 14999.00,
-                1199.00, 650.00, 4299.00,
-                18500.00, 2199.00, 450.00,
-                899.00, 799.00, 250.00,
-                1450.00, 2899.00
-        };
-        int[] stocks = {
-                25, 40, 10,
-                35, 60, 18,
-                8, 30, 80,
-                45, 50, 100,
-                22, 15
-        };
+        boolean prevSuspended = persistenceSuspended;
+        persistenceSuspended = true;
+        try {
+            int[] skuIds = {500, 300, 700, 200, 400, 600, 800, 150, 250, 350, 450, 550, 650, 750};
+            String[] names = {
+                    "Pro Mechanical Keyboard", "Wireless Ergonomic Mouse", "4K Ultra-HD Monitor 27\"",
+                    "USB-C Multiport Hub", "Ergonomic Desk Mat XL", "Noise-Cancelling Headset",
+                    "Motorized Standing Desk", "1080p Streaming Webcam", "High-Speed HDMI Cable",
+                    "Vertical Laptop Stand", "RGB Gaming Mousepad", "Screen Cleaning Kit",
+                    "Laptop Cooling Pad", "Dual Monitor Arm Mount"
+            };
+            double[] prices = {
+                    3499.00, 1250.00, 14999.00,
+                    1199.00, 650.00, 4299.00,
+                    18500.00, 2199.00, 450.00,
+                    899.00, 799.00, 250.00,
+                    1450.00, 2899.00
+            };
+            int[] stocks = {
+                    25, 40, 10,
+                    35, 60, 18,
+                    8, 30, 80,
+                    45, 50, 100,
+                    22, 15
+            };
 
-        for (int i = 0; i < skuIds.length; i++) {
-            inventoryBst.insert(new Product(skuIds[i], names[i], prices[i], stocks[i]));
+            for (int i = 0; i < skuIds.length; i++) {
+                inventoryBst.insert(new Product(skuIds[i], names[i], prices[i], stocks[i]));
+            }
+
+            restock(300, 20);
+            restock(500, 15);
+
+            packageArray.add(new FreightPackage(nextPackageId++, 991, "Manila Central Hub", 1.45, 1, sequenceCounter++));
+            packageArray.add(new FreightPackage(nextPackageId++, 992, "Quezon City Hub", 0.65, 3, sequenceCounter++));
+            packageArray.add(new FreightPackage(nextPackageId++, 993, "Makati Logistics Hub", 8.20, 1, sequenceCounter++));
+            packageArray.add(new FreightPackage(nextPackageId++, 994, "Manila Central Hub", 15.40, 3, sequenceCounter++));
+            packageArray.add(new FreightPackage(nextPackageId++, 995, "Quezon City Hub", 2.10, 4, sequenceCounter++));
+        } finally {
+            persistenceSuspended = prevSuspended;
         }
-
-        restock(300, 20);
-        restock(500, 15);
-
-        packageArray.add(new FreightPackage(nextPackageId++, 991, "Manila Central Hub", 1.45, 1, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 992, "Quezon City Hub", 0.65, 3, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 993, "Makati Logistics Hub", 8.20, 1, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 994, "Manila Central Hub", 15.40, 3, sequenceCounter++));
-        packageArray.add(new FreightPackage(nextPackageId++, 995, "Quezon City Hub", 2.10, 4, sequenceCounter++));
     }
 
     public OrderQueue getOrderQueue() {
@@ -355,7 +430,27 @@ public class FulfillmentService {
         return nextOrderId;
     }
 
+    public int getNextActionId() {
+        return nextActionId;
+    }
+
     public int getNextPackageId() {
         return nextPackageId;
+    }
+
+    public int getSequenceCounter() {
+        return sequenceCounter;
+    }
+
+    public File getStorageFile() {
+        return storageFile;
+    }
+
+    public String getStartupNotice() {
+        return startupNotice;
+    }
+
+    public String getLastPersistenceError() {
+        return lastPersistenceError;
     }
 }

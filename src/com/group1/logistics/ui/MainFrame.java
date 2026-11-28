@@ -99,6 +99,15 @@ public class MainFrame extends JFrame {
 
         refreshAll();
         sidebarPanel.selectTab(1);
+
+        if (service.getStartupNotice() != null) {
+            setFeedback(false, service.getStartupNotice());
+        } else if (service.getLastPersistenceError() != null) {
+            setFeedback(false, "Auto-save warning: " + service.getLastPersistenceError());
+        } else if (service.getStorageFile() != null) {
+            lblFeedback.setToolTipText("Saved locally at: " + service.getStorageFile().getAbsolutePath());
+            setFeedback(true, "Ready · Auto-save active (" + service.getStorageFile().getName() + ").");
+        }
     }
 
     public void showTab(int index) {
@@ -129,6 +138,23 @@ public class MainFrame extends JFrame {
         catalogPanel.setTechnicalDetails(enabled);
         restockPanel.setTechnicalDetails(enabled);
         freightPanel.setTechnicalDetails(enabled);
+    }
+
+    public void handleResetSampleData() {
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Reset products, waiting orders, restock logs, and shipments back to the starting sample data?\n"
+                        + "Your previous saved state will be preserved in the .bak backup file.",
+                "Confirm Reset Sample Data",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            OpResult result = service.resetToDefaultSeedData();
+            catalogPanel.clearSelectionState();
+            refreshAll();
+            setFeedback(result);
+        }
     }
 
     public void setFeedback(OpResult result) {

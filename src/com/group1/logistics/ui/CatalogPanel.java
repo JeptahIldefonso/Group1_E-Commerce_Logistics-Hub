@@ -336,6 +336,12 @@ public class CatalogPanel extends JPanel {
     }
 
     private void clearSearch() {
+        clearSelectionState();
+        mainFrame.setFeedback(true, "Search cleared.");
+        updateFilterPills();
+    }
+
+    public void clearSelectionState() {
         if (searchDebounceTimer != null) {
             searchDebounceTimer.stop();
         }
@@ -343,8 +349,6 @@ public class CatalogPanel extends JPanel {
         selectedProduct = null;
         updateDeleteButtonState();
         tblCatalog.clearSelection();
-        mainFrame.setFeedback(true, "Search cleared.");
-        updateFilterPills();
     }
 
     private void handleDeleteProduct() {

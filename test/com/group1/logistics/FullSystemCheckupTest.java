@@ -14,6 +14,9 @@ import com.group1.logistics.ui.*;
 
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class FullSystemCheckupTest {
     public static void main(String[] args) {
@@ -276,6 +279,32 @@ public class FullSystemCheckupTest {
         check(service.findProduct(800).getStockQty() == 0 && service.getAvailableStock(800) == 0,
                 "Physical and available stock both settle cleanly at 0 after dispatch");
         check("Out of Stock".equals(liveCatalog.getValueAt(deskRow, 4)), "Status remains Out of Stock after dispatch");
+
+        Path tempDir = null;
+        try {
+            tempDir = Files.createTempDirectory("lhub_full_persist");
+            File db = new File(tempDir.toFile(), "logistics-data.txt");
+            FulfillmentService p1 = new FulfillmentService(db);
+            check(p1.enqueueOrder("Persist User", 800, 4, "Manila Central Hub", 1).isSuccess(),
+                    "Queued 4 desks in persistent service");
+            FulfillmentService p2 = new FulfillmentService(db);
+            check(p2.getOrderQueue().size() == 1 && p2.getAvailableStock(800) == 4,
+                    "Restart reload preserves queued order and 4 available stock");
+            check(p2.resetToDefaultSeedData().isSuccess() && p2.getOrderQueue().size() == 0 && p2.getAvailableStock(800) == 8,
+                    "Reset sample data restores clean seed state on disk");
+        } catch (Exception ex) {
+            check(false, "Persistence check threw exception: " + ex.getMessage());
+        } finally {
+            if (tempDir != null) {
+                File[] files = tempDir.toFile().listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        f.delete();
+                    }
+                }
+                tempDir.toFile().delete();
+            }
+        }
 
         if (!GraphicsEnvironment.isHeadless()) {
             MainFrame frame = new MainFrame(service);

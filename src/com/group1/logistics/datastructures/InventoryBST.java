@@ -121,6 +121,23 @@ public class InventoryBST {
         }
     }
 
+    public Product[] preOrder() {
+        Product[] result = new Product[size];
+        int[] index = { 0 };
+        preOrderRecursive(root, result, index);
+        return result;
+    }
+
+    private void preOrderRecursive(SKUNode node, Product[] result, int[] index) {
+        if (node != null) {
+            if (index[0] < result.length) {
+                result[index[0]++] = node.product;
+            }
+            preOrderRecursive(node.left, result, index);
+            preOrderRecursive(node.right, result, index);
+        }
+    }
+
     public int size() {
         return size;
     }

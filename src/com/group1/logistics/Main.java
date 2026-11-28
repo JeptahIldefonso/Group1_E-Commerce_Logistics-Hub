@@ -1,6 +1,7 @@
 package com.group1.logistics;
 
 import com.group1.logistics.service.FulfillmentService;
+import com.group1.logistics.service.FulfillmentStorage;
 import com.group1.logistics.ui.MainFrame;
 
 import javax.swing.*;
@@ -13,7 +14,7 @@ public class Main {
         }
 
         SwingUtilities.invokeLater(() -> {
-            FulfillmentService service = new FulfillmentService();
+            FulfillmentService service = new FulfillmentService(FulfillmentStorage.defaultSaveFile());
             MainFrame frame = new MainFrame(service);
             frame.setVisible(true);
         });
