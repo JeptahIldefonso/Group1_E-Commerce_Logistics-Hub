@@ -7,6 +7,10 @@ import com.group1.logistics.service.FulfillmentService;
 import javax.swing.table.AbstractTableModel;
 
 public class CatalogTableModel extends AbstractTableModel {
+    public static final int SORT_BY_SKU_ASC = 0;
+    public static final int SORT_BY_STOCK_ASC = 1;
+    public static final int SORT_BY_STOCK_DESC = 2;
+
     private final InventoryBST bst;
     private final FulfillmentService service;
     private Product[] cachedProducts;
@@ -16,6 +20,7 @@ public class CatalogTableModel extends AbstractTableModel {
     private int[] cachedReservedStock;
     private int healthyCount;
     private int attentionCount;
+    private int sortMode = SORT_BY_SKU_ASC;
     private final String[] columns = {"Product Code", "Product Name", "Price", "In Stock", "Status"};
 
     public CatalogTableModel(InventoryBST bst, FulfillmentService service) {
@@ -59,7 +64,48 @@ public class CatalogTableModel extends AbstractTableModel {
         }
         this.healthyCount = healthy;
         this.attentionCount = attention;
+        if (len > 1 && sortMode != SORT_BY_SKU_ASC) {
+            sortCachedRowsByStock(sortMode == SORT_BY_STOCK_ASC);
+        }
         fireTableDataChanged();
+    }
+
+    public int getSortMode() {
+        return sortMode;
+    }
+
+    public void setSortMode(int mode) {
+        if (mode != SORT_BY_STOCK_ASC && mode != SORT_BY_STOCK_DESC) {
+            mode = SORT_BY_SKU_ASC;
+        }
+        this.sortMode = mode;
+        refresh();
+    }
+
+    private void sortCachedRowsByStock(boolean ascending) {
+        int len = cachedProducts.length;
+        for (int i = 1; i < len; i++) {
+            Product keyProd = cachedProducts[i];
+            String keyPrice = cachedPrices[i];
+            String keyLower = cachedLowerNames[i];
+            int keyAvail = cachedAvailableStock[i];
+            int keyReserved = cachedReservedStock[i];
+
+            int j = i - 1;
+            while (j >= 0 && (ascending ? cachedAvailableStock[j] > keyAvail : cachedAvailableStock[j] < keyAvail)) {
+                cachedProducts[j + 1] = cachedProducts[j];
+                cachedPrices[j + 1] = cachedPrices[j];
+                cachedLowerNames[j + 1] = cachedLowerNames[j];
+                cachedAvailableStock[j + 1] = cachedAvailableStock[j];
+                cachedReservedStock[j + 1] = cachedReservedStock[j];
+                j--;
+            }
+            cachedProducts[j + 1] = keyProd;
+            cachedPrices[j + 1] = keyPrice;
+            cachedLowerNames[j + 1] = keyLower;
+            cachedAvailableStock[j + 1] = keyAvail;
+            cachedReservedStock[j + 1] = keyReserved;
+        }
     }
 
     public int getTotalCount() {
@@ -104,18 +150,26 @@ public class CatalogTableModel extends AbstractTableModel {
         if (cachedProducts == null) {
             return -1;
         }
-        int lo = 0;
-        int hi = cachedProducts.length - 1;
-        while (lo <= hi) {
-            int mid = (lo + hi) >>> 1;
-            int midId = cachedProducts[mid].getSkuId();
-            if (midId == skuId) {
-                return mid;
+        if (sortMode == SORT_BY_SKU_ASC) {
+            int lo = 0;
+            int hi = cachedProducts.length - 1;
+            while (lo <= hi) {
+                int mid = (lo + hi) >>> 1;
+                int midId = cachedProducts[mid].getSkuId();
+                if (midId == skuId) {
+                    return mid;
+                }
+                if (midId < skuId) {
+                    lo = mid + 1;
+                } else {
+                    hi = mid - 1;
+                }
             }
-            if (midId < skuId) {
-                lo = mid + 1;
-            } else {
-                hi = mid - 1;
+            return -1;
+        }
+        for (int i = 0; i < cachedProducts.length; i++) {
+            if (cachedProducts[i].getSkuId() == skuId) {
+                return i;
             }
         }
         return -1;

@@ -12,6 +12,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class CatalogPanel extends JPanel {
     private final FulfillmentService service;
@@ -23,6 +25,11 @@ public class CatalogPanel extends JPanel {
     private JButton btnAddProduct;
     private JButton btnDeleteProduct;
     private JLabel lblTreeHeightBadge;
+
+    private JLabel lblSortStatus;
+    private JButton btnSortByCode;
+    private JButton btnSortStockAsc;
+    private JButton btnSortStockDesc;
 
     private JLabel lblPillAll;
     private JLabel lblPillHealthy;
@@ -51,13 +58,19 @@ public class CatalogPanel extends JPanel {
                 new EmptyBorder(12, 14, 12, 14)
         ));
 
-        centerCard.add(createToolbar(), BorderLayout.NORTH);
+        JPanel topControls = new JPanel(new BorderLayout(0, 6));
+        topControls.setOpaque(false);
+        topControls.add(createToolbar(), BorderLayout.NORTH);
+        topControls.add(createSortBar(), BorderLayout.SOUTH);
+
+        centerCard.add(topControls, BorderLayout.NORTH);
         centerCard.add(createTable(), BorderLayout.CENTER);
         centerCard.add(createTableFooter(), BorderLayout.SOUTH);
 
         add(centerCard, BorderLayout.CENTER);
 
         updateFilterPills();
+        updateSortUi();
         updateDeleteButtonState();
         SwingUtilities.invokeLater(() -> txtSearch.requestFocusInWindow());
     }
@@ -70,6 +83,7 @@ public class CatalogPanel extends JPanel {
                 lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " | Size: " + service.getInventoryBst().size() + " ");
             }
         }
+        updateSortUi();
     }
 
     private JPanel createPageHeader() {
@@ -125,13 +139,24 @@ public class CatalogPanel extends JPanel {
         pnlPills.add(lblPillAttention);
         toolbar.add(pnlPills, BorderLayout.WEST);
 
-        JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        rightBox.setOpaque(false);
+        JPanel searchWrap = new JPanel(new GridBagLayout());
+        searchWrap.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
 
-        txtSearch = new JTextField(14);
+        txtSearch = new JTextField(10);
+        txtSearch.setMinimumSize(new Dimension(70, 32));
+        txtSearch.setPreferredSize(new Dimension(150, 32));
         txtSearch.setFont(UiTheme.FONT_REGULAR);
         txtSearch.setToolTipText("Search products by code or name (instant live highlight or press Enter)");
         UiTheme.installFocusRing(txtSearch);
+        searchWrap.add(txtSearch, gbc);
+
+        toolbar.add(searchWrap, BorderLayout.CENTER);
+
+        JPanel rightBox = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        rightBox.setOpaque(false);
 
         searchDebounceTimer = new Timer(250, e -> {
             String q = txtSearch.getText().trim();
@@ -188,7 +213,6 @@ public class CatalogPanel extends JPanel {
         btnDeleteProduct.setEnabled(false);
         btnDeleteProduct.addActionListener(e -> handleDeleteProduct());
 
-        rightBox.add(txtSearch);
         rightBox.add(btnSearch);
         rightBox.add(btnRefresh);
         rightBox.add(btnAddProduct);
@@ -196,6 +220,56 @@ public class CatalogPanel extends JPanel {
 
         toolbar.add(rightBox, BorderLayout.EAST);
         return toolbar;
+    }
+
+    private JPanel createSortBar() {
+        JPanel sortBar = new JPanel(new BorderLayout(12, 0));
+        sortBar.setOpaque(false);
+        sortBar.setBorder(new EmptyBorder(0, 0, 2, 0));
+
+        lblSortStatus = new JLabel();
+        lblSortStatus.setFont(UiTheme.FONT_SUBTITLE);
+        lblSortStatus.setOpaque(true);
+        lblSortStatus.setBackground(UiTheme.SURFACE_ALT);
+        lblSortStatus.setForeground(UiTheme.TEXT_PRIMARY);
+        lblSortStatus.setBorder(new CompoundBorder(
+                new LineBorder(UiTheme.BORDER_CARD, 1, true),
+                new EmptyBorder(6, 12, 6, 12)
+        ));
+        sortBar.add(lblSortStatus, BorderLayout.CENTER);
+
+        JPanel sortBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        sortBtns.setOpaque(false);
+
+        btnSortByCode = UiTheme.createToggleSortButton(
+                "By Code",
+                null,
+                true,
+                "Default BST in-order sequence sorted ascending by Product Code"
+        );
+        btnSortStockAsc = UiTheme.createToggleSortButton(
+                "Stock: Low to High",
+                null,
+                false,
+                "Sort ascending by In Stock quantity (fewest & out-of-stock first)"
+        );
+        btnSortStockDesc = UiTheme.createToggleSortButton(
+                "Stock: High to Low",
+                null,
+                false,
+                "Sort descending by In Stock quantity (highest stock first)"
+        );
+
+        btnSortByCode.addActionListener(e -> applySortMode(CatalogTableModel.SORT_BY_SKU_ASC, true));
+        btnSortStockAsc.addActionListener(e -> applySortMode(CatalogTableModel.SORT_BY_STOCK_ASC, true));
+        btnSortStockDesc.addActionListener(e -> applySortMode(CatalogTableModel.SORT_BY_STOCK_DESC, true));
+
+        sortBtns.add(btnSortByCode);
+        sortBtns.add(btnSortStockAsc);
+        sortBtns.add(btnSortStockDesc);
+
+        sortBar.add(sortBtns, BorderLayout.EAST);
+        return sortBar;
     }
 
     private JLabel createPill(Color bg, Color border, Color fg) {
@@ -226,6 +300,22 @@ public class CatalogPanel extends JPanel {
 
         colModel.getColumn(4).setCellRenderer(new UiTheme.StatusPillRenderer());
 
+        tblCatalog.getTableHeader().setToolTipText("Click Product Code or In Stock header to sort");
+        tblCatalog.getTableHeader().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int col = tblCatalog.columnAtPoint(e.getPoint());
+                if (col == 3 || col == 4) {
+                    int next = (catalogTableModel.getSortMode() == CatalogTableModel.SORT_BY_STOCK_ASC)
+                            ? CatalogTableModel.SORT_BY_STOCK_DESC
+                            : CatalogTableModel.SORT_BY_STOCK_ASC;
+                    applySortMode(next, true);
+                } else if (col == 0) {
+                    applySortMode(CatalogTableModel.SORT_BY_SKU_ASC, true);
+                }
+            }
+        });
+
         tblCatalog.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int row = tblCatalog.getSelectedRow();
@@ -252,8 +342,80 @@ public class CatalogPanel extends JPanel {
         lblTableSummary.setFont(UiTheme.FONT_HINT);
         lblTableSummary.setForeground(UiTheme.TEXT_MUTED);
 
+        JLabel lblSortHint = new JLabel("Click 'In Stock' header or buttons above to sort by stock");
+        lblSortHint.setFont(UiTheme.FONT_HINT);
+        lblSortHint.setForeground(UiTheme.TEXT_MUTED);
+
         footer.add(lblTableSummary, BorderLayout.WEST);
+        footer.add(lblSortHint, BorderLayout.EAST);
         return footer;
+    }
+
+    public void applySortMode(int mode, boolean notifyFeedback) {
+        catalogTableModel.setSortMode(mode);
+        if (selectedProduct != null) {
+            int row = catalogTableModel.findRowBySkuId(selectedProduct.getSkuId());
+            if (row >= 0 && row < tblCatalog.getRowCount()) {
+                tblCatalog.setRowSelectionInterval(row, row);
+                tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(row, 0, true));
+            }
+        } else if (tblCatalog.getRowCount() > 0) {
+            tblCatalog.scrollRectToVisible(tblCatalog.getCellRect(0, 0, true));
+        }
+        updateSortUi();
+        if (notifyFeedback) {
+            if (mode == CatalogTableModel.SORT_BY_STOCK_ASC) {
+                mainFrame.setFeedback(true, "Products sorted by In Stock (fewest first).");
+            } else if (mode == CatalogTableModel.SORT_BY_STOCK_DESC) {
+                mainFrame.setFeedback(true, "Products sorted by In Stock (highest first).");
+            } else {
+                mainFrame.setFeedback(true, "Products sorted by Product Code (default BST order).");
+            }
+        }
+    }
+
+    private void updateSortUi() {
+        int mode = catalogTableModel.getSortMode();
+        UiTheme.setToggleSortActive(btnSortByCode, mode == CatalogTableModel.SORT_BY_SKU_ASC);
+        UiTheme.setToggleSortActive(btnSortStockAsc, mode == CatalogTableModel.SORT_BY_STOCK_ASC);
+        UiTheme.setToggleSortActive(btnSortStockDesc, mode == CatalogTableModel.SORT_BY_STOCK_DESC);
+
+        if (lblSortStatus != null) {
+            String desc;
+            String tech = "";
+            if (mode == CatalogTableModel.SORT_BY_STOCK_ASC) {
+                desc = "In Stock — Fewest First (Ascending)";
+                if (technicalDetails) {
+                    tech = " · Stable InsertionSort";
+                }
+            } else if (mode == CatalogTableModel.SORT_BY_STOCK_DESC) {
+                desc = "In Stock — Most First (Descending)";
+                if (technicalDetails) {
+                    tech = " · Stable InsertionSort";
+                }
+            } else {
+                desc = "Product Code (Ascending)";
+                if (technicalDetails) {
+                    tech = " · BST In-Order";
+                }
+            }
+            lblSortStatus.setText(" Showing: " + desc + tech);
+        }
+
+        if (tblCatalog != null) {
+            TableColumnModel cols = tblCatalog.getColumnModel();
+            if (cols.getColumnCount() >= 5) {
+                cols.getColumn(0).setHeaderValue(mode == CatalogTableModel.SORT_BY_SKU_ASC ? "Product Code ↑" : "Product Code");
+                if (mode == CatalogTableModel.SORT_BY_STOCK_ASC) {
+                    cols.getColumn(3).setHeaderValue("In Stock ↑");
+                } else if (mode == CatalogTableModel.SORT_BY_STOCK_DESC) {
+                    cols.getColumn(3).setHeaderValue("In Stock ↓");
+                } else {
+                    cols.getColumn(3).setHeaderValue("In Stock");
+                }
+                tblCatalog.getTableHeader().repaint();
+            }
+        }
     }
 
     private void handleOpenAddDialog() {
@@ -417,6 +579,7 @@ public class CatalogPanel extends JPanel {
             }
         }
         updateFilterPills();
+        updateSortUi();
         if (lblTreeHeightBadge != null && technicalDetails) {
             lblTreeHeightBadge.setText(" BST Height: " + service.getInventoryBst().height() + " | Size: " + service.getInventoryBst().size() + " ");
         }
