@@ -232,6 +232,36 @@ public class SidebarPanel extends JPanel {
         chkTechnicalDetails.setToolTipText("Show data structure metrics, algorithm names, and BST height");
         chkTechnicalDetails.addActionListener(e -> mainFrame.handleToggleTechnicalDetails(chkTechnicalDetails.isSelected()));
 
+        JButton btnResetData = new JButton("Reset Sample Data", new UiTheme.VectorIcon(UiTheme.IconType.REFRESH, 12, UiTheme.SIDEBAR_TEXT)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                boolean hover = getModel().isRollover();
+                g2.setColor(hover ? UiTheme.SIDEBAR_HOVER : UiTheme.SIDEBAR_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.setColor(UiTheme.SIDEBAR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btnResetData.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnResetData.setForeground(UiTheme.SIDEBAR_TEXT);
+        btnResetData.setContentAreaFilled(false);
+        btnResetData.setBorderPainted(false);
+        btnResetData.setFocusPainted(false);
+        btnResetData.setOpaque(false);
+        btnResetData.setRolloverEnabled(true);
+        btnResetData.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnResetData.setHorizontalAlignment(SwingConstants.LEFT);
+        btnResetData.setIconTextGap(7);
+        btnResetData.setMargin(new Insets(5, 8, 5, 8));
+        btnResetData.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnResetData.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        btnResetData.setToolTipText("Restore default sample inventory, orders, restocks, and shipments");
+        btnResetData.addActionListener(e -> mainFrame.handleResetSampleData());
+
         JPanel operatorBox = new JPanel(new BorderLayout(4, 2));
         operatorBox.setOpaque(false);
         operatorBox.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -249,6 +279,8 @@ public class SidebarPanel extends JPanel {
         operatorBox.add(lblEnv, BorderLayout.SOUTH);
 
         bottomContainer.add(chkTechnicalDetails);
+        bottomContainer.add(Box.createVerticalStrut(8));
+        bottomContainer.add(btnResetData);
         bottomContainer.add(operatorBox);
 
         add(bottomContainer, BorderLayout.SOUTH);

@@ -3,7 +3,7 @@
 **Group 1 · BSIS 2nd Year — Data Structures & Algorithms (Final Project)**  
 Built with **Java 17 LTS** and **Java Swing**. Zero external libraries and zero `java.util.*` collections.
 
-Logistics Hub is an offline desktop program for the back room of an online store (like a Shopee or Lazada warehouse). You double-click one executable JAR file and it opens right away—no database setup, no IDE required. Because everything stays in memory, every launch starts from the same clean sample data.
+Logistics Hub is an offline desktop program for the back room of an online store (like a Shopee or Lazada warehouse). You double-click one executable JAR file and it opens right away—no database server setup, no IDE required. Your products, orders, restocks, and shipments automatically save safely to a local file (`~/.logistics-hub/logistics-data.txt`) with atomic `.tmp` + `.bak` backup protection and checksum verification, and you can restore the initial sample data anytime with **Reset Sample Data** in the sidebar.
 
 ---
 
@@ -39,7 +39,7 @@ DSAjava/
 │   ├── models/                   Product, Order, RestockAction, FreightPackage (bounds & stock guards)
 │   ├── datastructures/           OrderQueue, RestockStack, InventoryBST, SKUNode, FreightPackageArray
 │   ├── sorting/                  SortCriteria, PackageCriteria, QuickSort, InsertionSort
-│   ├── service/                  FulfillmentService (BR-01..BR-09, live queued reservation), OpResult
+│   ├── service/                  FulfillmentService (BR-01..BR-09, live reservation), FulfillmentStorage, OpResult
 │   └── ui/                       MainFrame, SidebarPanel, UiTheme, 4 module panels, 4 table models, 3 modals
 ├── test/com/group1/logistics/    6 standalone Java test & benchmark suites (no JUnit needed)
 ├── docs/                         Technical documentation (Markdown + PDF) and course guidelines

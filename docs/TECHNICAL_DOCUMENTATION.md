@@ -10,7 +10,7 @@ This document explains what our app does, how it is built, how to use it, and ho
 
 ## 1. What the app does
 
-Logistics Hub is a desktop program for the back room of an online store—the place where orders get packed and sent out, like the warehouse of a Shopee or Lazada seller. It works offline. You double-click one JAR file and it opens. Nothing is saved to a database, so it starts from the same sample data every time.
+Logistics Hub is a desktop program for the back room of an online store—the place where orders get packed and sent out, like the warehouse of a Shopee or Lazada seller. It works offline. You double-click one JAR file and it opens. Every change saves safely to a local file (`~/.logistics-hub/logistics-data.txt`) using atomic `.tmp` writes, rolling `.bak` backups, and checksum verification, and you can use **Reset Sample Data** in the sidebar to start cleanly from the default sample data anytime.
 
 A warehouse worker has four daily jobs, and the app has one screen for each:
 
@@ -22,7 +22,7 @@ A warehouse worker has four daily jobs, and the app has one screen for each:
 There is a reason for splitting it this way. Each screen shows one of the data structures our subject asks for: **Orders** is the queue, **Restock** is the stack, **Products** is the binary search tree, and **Shipments** is the array with the sorting algorithms.
 
 ### The rules we followed
-- **Java 17 only.** We compile with `javac --release 17` into one runnable file, `LogisticsHub.jar` (49 class files).
+- **Java 17 only.** We compile with `javac --release 17` into one runnable file, `LogisticsHub.jar` (52 class files).
 - **No outside libraries and no Java collections.** Under [`FINAL-Project-Guide (1).pdf`](guidelines/FINAL-Project-Guide%20(1).pdf), none of these appear anywhere in our `src` folder: `ArrayList`, `LinkedList`, `Queue`, `Stack`, `HashMap`, `Arrays.sort`, `Comparator`, `java.time`, `java.text`, or any look-and-feel JAR. We wrote our own versions of what we needed.
 - **Every table uses `AbstractTableModel`** and its cells cannot be edited (`isCellEditable` returns `false`). We did not use `DefaultTableModel` or `TableRowSorter`. Clicking a column header to sort is handled by our own mouse listeners.
 
@@ -30,13 +30,13 @@ There is a reason for splitting it this way. Each screen shows one of the data s
 
 ## 2. How the program is organized
 
-We split the code into layers so that button clicks do not contain business rules or pointer logic. The screens only show things and pass requests along. A service class decides what is allowed. The data structures only store and retrieve data. In total there are **30 source files**, plus **6 test programs**.
+We split the code into layers so that button clicks do not contain business rules or pointer logic. The screens only show things and pass requests along. A service class decides what is allowed. The data structures only store and retrieve data. In total there are **31 source files**, plus **6 test programs**.
 
 | Part | Package | What it does |
 | :--- | :--- | :--- |
-| **Entry point** | `com.group1.logistics` | `Main` sets the system look and feel and opens `MainFrame` safely on the Swing event thread. |
-| **Screens** | `com.group1.logistics.ui` | `MainFrame`, `SidebarPanel`, `UiTheme`, four panels (one per screen), four table models and three pop-up dialogs. A navy sidebar on the left, the active screen in the middle, a message strip at the bottom, and icons and colored status labels drawn with Java 2D. The screens only talk to `FulfillmentService`. |
-| **Service (the brain)** | `com.group1.logistics.service` | `FulfillmentService` and `OpResult`. It enforces business rules `BR-01` to `BR-09`, checks stock before an order leaves the queue, counts queued quantities as already taken, and blocks an undo that would erase shipped items. `OpResult` carries success or failure, plus a message, back to the screen. |
+| **Entry point** | `com.group1.logistics` | `Main` sets the system look and feel and opens `MainFrame` safely on the Swing event thread with local save enabled. |
+| **Screens** | `com.group1.logistics.ui` | `MainFrame`, `SidebarPanel`, `UiTheme`, four panels (one per screen), four table models and three pop-up dialogs. A navy sidebar on the left (including **Technical details** and **Reset Sample Data**), the active screen in the middle, a message strip at the bottom, and icons and colored status labels drawn with Java 2D. The screens only talk to `FulfillmentService`. |
+| **Service (the brain)** | `com.group1.logistics.service` | `FulfillmentService`, `FulfillmentStorage`, and `OpResult`. It enforces business rules `BR-01` to `BR-09`, checks stock before an order leaves the queue, counts queued quantities as already taken, blocks an undo that would erase shipped items, and atomically saves/recovers state to disk (preserving BST height via `preOrder()`). `OpResult` carries success or failure, plus a message, back to the screen. |
 | **Data structures** | `com.group1.logistics.datastructures` | `OrderQueue`, `RestockStack`, `InventoryBST`, `SKUNode` and `FreightPackageArray`, all built by hand: a circular array queue, a stack with a top pointer, a binary search tree with left and right pointers, and an array that doubles when full. |
 | **Sorting** | `com.group1.logistics.sorting` | `SortCriteria`, `PackageCriteria`, `QuickSort` and `InsertionSort`. Our own comparison interface, a Hoare QuickSort for weight and package number, and a stable InsertionSort for delivery speed and destination. |
 | **Models** | `com.group1.logistics.models` | `Product`, `Order`, `RestockAction` and `FreightPackage`. They refuse bad values: no negative stock, no zero or negative IDs, no infinite weights, and priority must be 1 to 5. |
@@ -201,7 +201,7 @@ flowchart TD
 
 Double-click `LogisticsHub.jar` (or run `run.bat`). You can move between screens with the sidebar on the left or with `Ctrl+1` (Orders), `Ctrl+2` (Products), `Ctrl+3` (Restock) and `Ctrl+4` (Shipments).
 
-The **Technical details** checkbox at the bottom of the sidebar shows what is happening inside, like the BST height, the sequence numbers (`Seq #`) and the name of the sorting algorithm. Leave it off for normal use and turn it on during the defense.
+The **Technical details** checkbox at the bottom of the sidebar shows what is happening inside, like the BST height, the sequence numbers (`Seq #`) and the name of the sorting algorithm. Right underneath it, **Reset Sample Data** restores the clean 14-item starting state anytime (keeping your prior save in a `.bak` backup).
 
 ### 6.1 Products (`Ctrl+2`)
 - Filter pills at the top show counts for **All**, **In Stock** (more than 20) and **Low / Out** (20 or less).

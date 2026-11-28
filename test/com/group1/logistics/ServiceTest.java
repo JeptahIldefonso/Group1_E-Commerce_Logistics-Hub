@@ -2,7 +2,14 @@ package com.group1.logistics;
 
 import com.group1.logistics.models.Product;
 import com.group1.logistics.service.FulfillmentService;
+import com.group1.logistics.service.FulfillmentStorage;
 import com.group1.logistics.service.OpResult;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class ServiceTest {
     public static void main(String[] args) {
@@ -75,6 +82,72 @@ public class ServiceTest {
         assert service.getInventoryBst().size() == bstSizeBefore : "Sorting packages must not affect BST!";
         System.out.println("  -> BR-09 (Sorting packages does not mutate BST): PASS");
 
+        testPersistenceAndBackupRecovery();
+        System.out.println("  -> Safe atomic local save, BST pre-order height preservation, and .bak recovery: PASS");
+
         System.out.println("\n>>> ALL BUSINESS SERVICE TESTS PASSED!\n");
+    }
+
+    private static void testPersistenceAndBackupRecovery() {
+        Path tempDir = null;
+        try {
+            tempDir = Files.createTempDirectory("lhub_persist_test");
+            File saveFile = new File(tempDir.toFile(), "logistics-data.txt");
+
+            FulfillmentService firstRun = new FulfillmentService(saveFile);
+            assert saveFile.exists() : "Initial save file must be written on first launch";
+
+            assert firstRun.addProduct(950, "UPS Backup \\ Unit", 3299.50, 12).isSuccess();
+            assert firstRun.enqueueOrder("Maria Reyes", 800, 3, "Manila Central Hub", 1).isSuccess();
+            assert firstRun.dispatchNext(4.25).isSuccess();
+            assert firstRun.enqueueOrder("Alex Santos", 800, 2, "Quezon City Hub", 3).isSuccess();
+            assert firstRun.restock(800, 5).isSuccess();
+            int expectedHeight = firstRun.getInventoryBst().height();
+            int expectedSize = firstRun.getInventoryBst().size();
+            int expectedPkgs = firstRun.getPackageArray().size();
+            int expectedNextOrder = firstRun.getNextOrderId();
+
+            FulfillmentService reloaded = new FulfillmentService(saveFile);
+            assert reloaded.getInventoryBst().size() == expectedSize : "Product count must persist across restart";
+            assert reloaded.getInventoryBst().height() == expectedHeight : "Pre-order save must preserve BST height";
+            assert reloaded.findProduct(950).getName().equals("UPS Backup \\ Unit") : "Escaped name must round-trip cleanly";
+            assert reloaded.findProduct(800).getStockQty() == 10 : "8 - 3 + 5 = 10 shelf stock must persist";
+            assert reloaded.getAvailableStock(800) == 8 : "10 - 2 queued = 8 available must persist";
+            assert reloaded.getOrderQueue().size() == 1 && reloaded.getOrderQueue().peek().getOrderId() == 1002 : "Queued order #1002 must persist";
+            assert reloaded.getNextOrderId() == expectedNextOrder : "Order ID counter must persist";
+            assert reloaded.getRestockStack().peek().getSkuId() == 800 : "LIFO restock top must persist";
+            assert reloaded.getPackageArray().size() == expectedPkgs : "Shipments must persist";
+
+            File bakFile = FulfillmentStorage.backupFileFor(saveFile);
+            assert bakFile.exists() : "Rolling .bak backup must exist after mutations";
+
+            try (FileOutputStream fos = new FileOutputStream(saveFile, false)) {
+                fos.write("LHUB|V1\nMETA|CORRUPTED\n".getBytes(StandardCharsets.UTF_8));
+            }
+            FulfillmentService recovered = new FulfillmentService(saveFile);
+            assert recovered.getStartupNotice() != null : "Recovery notice must be exposed after backup fallback";
+            assert recovered.findProduct(950) != null : "Backup recovery must restore valid prior saved state";
+
+            File[] quarantine = tempDir.toFile().listFiles((d, name) -> name.contains(".corrupt."));
+            assert quarantine != null && quarantine.length >= 1 : "Corrupted primary file must be quarantined aside";
+
+            assert recovered.resetToDefaultSeedData().isSuccess();
+            FulfillmentService afterReset = new FulfillmentService(saveFile);
+            assert afterReset.getInventoryBst().size() == 14 : "Reset must persist clean 14-item catalog";
+            assert afterReset.getOrderQueue().size() == 0 : "Reset must clear pending order queue";
+            assert afterReset.findProduct(800).getStockQty() == 8 : "Reset must restore SKU #800 to 8";
+        } catch (Exception ex) {
+            throw new AssertionError("Persistence test failed: " + ex.getMessage(), ex);
+        } finally {
+            if (tempDir != null) {
+                File[] files = tempDir.toFile().listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        f.delete();
+                    }
+                }
+                tempDir.toFile().delete();
+            }
+        }
     }
 }
