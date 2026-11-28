@@ -34,7 +34,10 @@ public class PlaceOrderDialog extends JDialog {
     private JComboBox<String> cmbDestination;
     private JComboBox<String> cmbPriority;
     private JLabel lblError;
+    private JButton btnCancel;
+    private JButton btnPlace;
     private boolean orderPlaced = false;
+    private boolean submitting = false;
 
     public PlaceOrderDialog(Frame parent, FulfillmentService service, MainFrame mainFrame) {
         super(parent, "Place Order", true);
@@ -187,10 +190,10 @@ public class PlaceOrderDialog extends JDialog {
         footer.setBackground(UiTheme.SURFACE_ALT);
         footer.setBorder(new MatteBorder(1, 0, 0, 0, new Color(0xF3, 0xF4, 0xF6)));
 
-        JButton btnCancel = UiTheme.createSecondaryButton("Cancel", "Discard and close");
+        btnCancel = UiTheme.createSecondaryButton("Cancel", "Discard and close");
         btnCancel.addActionListener(e -> dispose());
 
-        JButton btnPlace = UiTheme.createPrimaryButton("Place Order", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), "Submit and enqueue this order");
+        btnPlace = UiTheme.createPrimaryButton("Place Order", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), "Submit and enqueue this order");
         btnPlace.addActionListener(e -> submit());
 
         footer.add(btnCancel);
@@ -211,6 +214,9 @@ public class PlaceOrderDialog extends JDialog {
     }
 
     private void submit() {
+        if (submitting || orderPlaced || !isDisplayable()) {
+            return;
+        }
         String customer = txtCustomer.getText().trim();
         OrdersPanel.ProductComboItem selectedProduct = (OrdersPanel.ProductComboItem) cmbProduct.getSelectedItem();
         String qtyStr = txtQuantity.getText().trim();
@@ -254,22 +260,33 @@ public class PlaceOrderDialog extends JDialog {
             return;
         }
 
-        if (selectedProduct.getStock() <= 0) {
+        int liveAvailable = service.getAvailableStock(selectedProduct.getSkuId());
+        if (liveAvailable <= 0) {
+            loadProducts();
             lblError.setText(selectedProduct.getName() + " is out of stock (all units are reserved or depleted).");
             return;
         }
-        if (quantity > selectedProduct.getStock()) {
-            lblError.setText("Only " + selectedProduct.getStock() + " unreserved units available in stock.");
+        if (quantity > liveAvailable) {
+            loadProducts();
+            lblError.setText("Only " + liveAvailable + " unreserved units available in stock.");
             return;
         }
 
+        submitting = true;
+        btnPlace.setEnabled(false);
+        btnCancel.setEnabled(false);
         OpResult result = service.enqueueOrder(customer, selectedProduct.getSkuId(), quantity, destination, priority);
         if (result.isSuccess()) {
             this.orderPlaced = true;
             mainFrame.setFeedback(true, "Order placed for " + customer + " (" + quantity + "x " + selectedProduct.getName() + ").");
             mainFrame.refreshAll();
+            setVisible(false);
             dispose();
         } else {
+            submitting = false;
+            btnPlace.setEnabled(true);
+            btnCancel.setEnabled(true);
+            loadProducts();
             lblError.setText(result.getMessage());
         }
     }

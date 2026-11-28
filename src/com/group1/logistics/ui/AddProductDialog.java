@@ -20,7 +20,10 @@ public class AddProductDialog extends JDialog {
     private JTextField txtPrice;
     private JTextField txtStock;
     private JLabel lblError;
+    private JButton btnCancel;
+    private JButton btnAdd;
     private boolean productAdded = false;
+    private boolean submitting = false;
 
     public AddProductDialog(Frame parent, FulfillmentService service, MainFrame mainFrame) {
         super(parent, "Add Product", true);
@@ -167,10 +170,10 @@ public class AddProductDialog extends JDialog {
         footer.setBackground(UiTheme.SURFACE_ALT);
         footer.setBorder(new MatteBorder(1, 0, 0, 0, new Color(0xF3, 0xF4, 0xF6)));
 
-        JButton btnCancel = UiTheme.createSecondaryButton("Cancel", "Discard and close");
+        btnCancel = UiTheme.createSecondaryButton("Cancel", "Discard and close");
         btnCancel.addActionListener(e -> dispose());
 
-        JButton btnAdd = UiTheme.createPrimaryButton("Add Product", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), "Register this product into the catalog");
+        btnAdd = UiTheme.createPrimaryButton("Add Product", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), "Register this product into the catalog");
         btnAdd.addActionListener(e -> submit());
 
         footer.add(btnCancel);
@@ -179,6 +182,9 @@ public class AddProductDialog extends JDialog {
     }
 
     private void submit() {
+        if (submitting || productAdded || !isDisplayable()) {
+            return;
+        }
         String codeStr = txtCode.getText().trim();
         String name = txtName.getText().trim();
         String priceStr = txtPrice.getText().trim();
@@ -225,13 +231,20 @@ public class AddProductDialog extends JDialog {
             return;
         }
 
+        submitting = true;
+        btnAdd.setEnabled(false);
+        btnCancel.setEnabled(false);
         OpResult result = service.addProduct(skuId, name, price, stock);
         if (result.isSuccess()) {
             this.productAdded = true;
             mainFrame.setFeedback(true, "Product '" + name + "' added successfully.");
             mainFrame.refreshAll();
+            setVisible(false);
             dispose();
         } else {
+            submitting = false;
+            btnAdd.setEnabled(true);
+            btnCancel.setEnabled(true);
             lblError.setText(result.getMessage());
         }
     }

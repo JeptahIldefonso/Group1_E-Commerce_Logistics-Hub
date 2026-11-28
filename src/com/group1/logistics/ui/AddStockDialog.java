@@ -19,7 +19,10 @@ public class AddStockDialog extends JDialog {
     private JComboBox<OrdersPanel.ProductComboItem> cmbProduct;
     private JTextField txtQuantity;
     private JLabel lblError;
+    private JButton btnCancel;
+    private JButton btnAdd;
     private boolean stockAdded = false;
+    private boolean submitting = false;
 
     public AddStockDialog(Frame parent, FulfillmentService service, MainFrame mainFrame) {
         super(parent, "Add Stock", true);
@@ -137,10 +140,10 @@ public class AddStockDialog extends JDialog {
         footer.setBackground(UiTheme.SURFACE_ALT);
         footer.setBorder(new MatteBorder(1, 0, 0, 0, new Color(0xF3, 0xF4, 0xF6)));
 
-        JButton btnCancel = UiTheme.createSecondaryButton("Cancel", "Discard and close");
+        btnCancel = UiTheme.createSecondaryButton("Cancel", "Discard and close");
         btnCancel.addActionListener(e -> dispose());
 
-        JButton btnAdd = UiTheme.createSuccessButton("Add Stock", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), "Commit stock and push to audit stack");
+        btnAdd = UiTheme.createSuccessButton("Add Stock", new UiTheme.VectorIcon(UiTheme.IconType.PLUS, 14), "Commit stock and push to audit stack");
         btnAdd.addActionListener(e -> submit());
 
         footer.add(btnCancel);
@@ -160,6 +163,9 @@ public class AddStockDialog extends JDialog {
     }
 
     private void submit() {
+        if (submitting || stockAdded || !isDisplayable()) {
+            return;
+        }
         OrdersPanel.ProductComboItem selected = (OrdersPanel.ProductComboItem) cmbProduct.getSelectedItem();
         String qtyStr = txtQuantity.getText().trim();
 
@@ -180,13 +186,20 @@ public class AddStockDialog extends JDialog {
             return;
         }
 
+        submitting = true;
+        btnAdd.setEnabled(false);
+        btnCancel.setEnabled(false);
         OpResult result = service.restock(selected.getSkuId(), quantity);
         if (result.isSuccess()) {
             this.stockAdded = true;
             mainFrame.setFeedback(true, "Restocked +" + quantity + " units to " + selected.getName() + ".");
             mainFrame.refreshAll();
+            setVisible(false);
             dispose();
         } else {
+            submitting = false;
+            btnAdd.setEnabled(true);
+            btnCancel.setEnabled(true);
             lblError.setText(result.getMessage());
         }
     }

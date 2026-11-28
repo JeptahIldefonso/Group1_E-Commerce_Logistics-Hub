@@ -130,7 +130,8 @@ public class FulfillmentService {
         if (skuId <= 0) {
             return OpResult.err("Invalid SKU ID.");
         }
-        if (findProduct(skuId) == null) {
+        Product product = findProduct(skuId);
+        if (product == null) {
             return OpResult.err("SKU #" + skuId + " does not exist in catalog (BR-02).");
         }
         if (quantity <= 0) {
@@ -144,6 +145,14 @@ public class FulfillmentService {
         }
         if (orderQueue.isFull()) {
             return OpResult.err("The waiting list is full (" + orderQueue.capacity() + " orders). Please ship or cancel an order first.");
+        }
+        int availableStock = getAvailableStock(skuId);
+        if (availableStock <= 0) {
+            return OpResult.err(product.getName() + " (SKU #" + skuId + ") is out of stock (all units are reserved or depleted).");
+        }
+        if (quantity > availableStock) {
+            return OpResult.err("Insufficient available stock for SKU #" + skuId +
+                    " (Available: " + availableStock + ", Requested: " + quantity + ").");
         }
 
         Order order = new Order(nextOrderId++, customerName, skuId, quantity, destination, priority, sequenceCounter++);

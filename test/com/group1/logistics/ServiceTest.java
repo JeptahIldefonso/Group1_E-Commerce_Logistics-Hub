@@ -30,12 +30,24 @@ public class ServiceTest {
         assert p900.getStockQty() == 2 : "Stock after dispatching 3 units should be 2";
         System.out.println("  -> BR-03 (Peek -> Validate -> Commit dispatch): PASS");
 
-        service.enqueueOrder("Maria", 900, 10, "Quezon", 2);
+        OpResult overOrder = service.enqueueOrder("Maria", 900, 10, "Quezon", 2);
+        assert !overOrder.isSuccess() : "Order exceeding available stock must be rejected";
+
+        service.enqueueOrder("User1", 800, 8, "Manila", 1);
+        OpResult doubleOrder = service.enqueueOrder("User2", 800, 8, "Manila", 1);
+        assert !doubleOrder.isSuccess() : "Double-order exceeding stock on SKU 800 must be blocked";
+        assert service.getReservedQtyInQueue(800) == 8 : "Reserved quantity on SKU 800 must stay 8";
+        service.rejectFrontOrder();
+
+        service.restock(900, 8);
+        OpResult validMaria = service.enqueueOrder("Maria", 900, 10, "Quezon", 2);
+        assert validMaria.isSuccess() : "Order matching restocked available stock should succeed";
+        service.undoRestock();
         OpResult oosRes = service.dispatchNext(2.0);
         assert !oosRes.isSuccess() : "Dispatch should fail due to insufficient stock";
         assert service.getOrderQueue().peek().getCustomerName().equals("Maria") : "Order must REMAIN in queue!";
         assert service.findProduct(900).getStockQty() == 2 : "Stock must remain unchanged";
-        System.out.println("  -> BR-03/BR-04 (Insufficient stock keeps order queued without stock loss): PASS");
+        System.out.println("  -> BR-03/BR-04 (Over-order & double-order blocked; insufficient dispatch keeps queue safe): PASS");
 
         OpResult restockRes = service.restock(900, 50);
         assert restockRes.isSuccess();

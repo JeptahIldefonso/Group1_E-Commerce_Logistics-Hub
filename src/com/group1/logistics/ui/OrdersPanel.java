@@ -23,6 +23,8 @@ public class OrdersPanel extends JPanel {
     private JLabel lblNextOrderSummary;
     private JLabel lblQueueCapacity;
     private JTable tblOrders;
+    private boolean dialogOpen = false;
+    private boolean processingAction = false;
 
     public static class ProductComboItem {
         private final int skuId;
@@ -180,12 +182,20 @@ public class OrdersPanel extends JPanel {
     }
 
     private void handleOpenPlaceDialog() {
-        Frame topFrame = (Frame) SwingUtilities.getWindowAncestor(this);
-        PlaceOrderDialog dialog = new PlaceOrderDialog(topFrame, service, mainFrame);
-        dialog.setVisible(true);
+        if (dialogOpen) {
+            return;
+        }
+        dialogOpen = true;
+        try {
+            Frame topFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+            PlaceOrderDialog dialog = new PlaceOrderDialog(topFrame, service, mainFrame);
+            dialog.setVisible(true);
 
-        if (dialog.isOrderPlaced()) {
-            refreshTables();
+            if (dialog.isOrderPlaced()) {
+                refreshTables();
+            }
+        } finally {
+            dialogOpen = false;
         }
     }
 
@@ -218,68 +228,97 @@ public class OrdersPanel extends JPanel {
     }
 
     private void handleShipNext() {
-        if (service.getOrderQueue().isEmpty()) {
-            mainFrame.setFeedback(false, "No orders waiting to ship.");
+        if (processingAction) {
             return;
         }
-
-        Order front = service.getOrderQueue().peek();
-        Product p = service.findProduct(front.getSkuId());
-        String productName = p != null ? p.getName() : "Item #" + front.getSkuId();
-
-        String input = JOptionPane.showInputDialog(this,
-                "Shipping Order #" + front.getOrderId() + " (" + front.getCustomerName() + ")\n" +
-                "Item: " + front.getQuantity() + " × " + productName + "\n" +
-                "Deliver To: " + front.getDestination() + "\n\n" +
-                "Enter parcel weight in kg (0.01 - 50.00 kg):",
-                "Ship Order", JOptionPane.QUESTION_MESSAGE);
-
-        if (input == null) {
-            return;
-        }
-
+        processingAction = true;
         try {
-            double weight = Double.parseDouble(input.trim());
-            if (weight < 0.01 || weight > 50.00) {
-                mainFrame.setFeedback(false, "Parcel weight must be between 0.01 and 50.00 kg.");
-                JOptionPane.showMessageDialog(this, "Parcel weight must be between 0.01 and 50.00 kg.", "Invalid Weight", JOptionPane.WARNING_MESSAGE);
+            if (service.getOrderQueue().isEmpty()) {
+                mainFrame.setFeedback(false, "No orders waiting to ship.");
                 return;
             }
-            OpResult result = service.dispatchNext(weight);
-            if (result.isSuccess()) {
-                mainFrame.setFeedback(true, "Order #" + front.getOrderId() + " shipped to " + front.getDestination() + ".");
-                mainFrame.refreshAll();
-            } else {
-                mainFrame.setFeedback(false, result.getMessage());
-                JOptionPane.showMessageDialog(this, result.getMessage(), "Shipping Blocked", JOptionPane.WARNING_MESSAGE);
+
+            Order front = service.getOrderQueue().peek();
+            Product p = service.findProduct(front.getSkuId());
+            if (p == null) {
+                String msg = "Dispatch blocked: SKU #" + front.getSkuId() + " was discontinued! (Click 'Cancel Next' to remove).";
+                mainFrame.setFeedback(false, msg);
+                JOptionPane.showMessageDialog(this, msg, "Shipping Blocked", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        } catch (NumberFormatException ex) {
-            mainFrame.setFeedback(false, "Weight must be a valid number (e.g. 2.45).");
+            if (p.getStockQty() < front.getQuantity()) {
+                String msg = "Insufficient stock for SKU #" + front.getSkuId() +
+                        " (Available: " + p.getStockQty() + ", Requested: " + front.getQuantity() + "). Order remains in queue.";
+                mainFrame.setFeedback(false, msg);
+                JOptionPane.showMessageDialog(this, msg, "Shipping Blocked", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String productName = p.getName();
+            String input = JOptionPane.showInputDialog(this,
+                    "Shipping Order #" + front.getOrderId() + " (" + front.getCustomerName() + ")\n" +
+                    "Item: " + front.getQuantity() + " × " + productName + "\n" +
+                    "Deliver To: " + front.getDestination() + "\n\n" +
+                    "Enter parcel weight in kg (0.01 - 50.00 kg):",
+                    "Ship Order", JOptionPane.QUESTION_MESSAGE);
+
+            if (input == null) {
+                return;
+            }
+
+            try {
+                double weight = Double.parseDouble(input.trim());
+                if (weight < 0.01 || weight > 50.00) {
+                    mainFrame.setFeedback(false, "Parcel weight must be between 0.01 and 50.00 kg.");
+                    JOptionPane.showMessageDialog(this, "Parcel weight must be between 0.01 and 50.00 kg.", "Invalid Weight", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                OpResult result = service.dispatchNext(weight);
+                if (result.isSuccess()) {
+                    mainFrame.setFeedback(true, "Order #" + front.getOrderId() + " shipped to " + front.getDestination() + ".");
+                    mainFrame.refreshAll();
+                } else {
+                    mainFrame.setFeedback(false, result.getMessage());
+                    JOptionPane.showMessageDialog(this, result.getMessage(), "Shipping Blocked", JOptionPane.WARNING_MESSAGE);
+                }
+            } catch (NumberFormatException ex) {
+                mainFrame.setFeedback(false, "Weight must be a valid number (e.g. 2.45).");
+            }
+        } finally {
+            processingAction = false;
         }
     }
 
     private void handleCancelNext() {
-        if (service.getOrderQueue().isEmpty()) {
-            mainFrame.setFeedback(false, "No orders waiting to cancel.");
+        if (processingAction) {
             return;
         }
-
-        Order front = service.getOrderQueue().peek();
-        Product p = service.findProduct(front.getSkuId());
-        String productName = p != null ? p.getName() : "Item #" + front.getSkuId();
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to cancel the next order for " + front.getCustomerName() + " (" + productName + ")?",
-                "Confirm Cancel Order", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            OpResult result = service.rejectFrontOrder();
-            if (result.isSuccess()) {
-                mainFrame.setFeedback(true, "Order #" + front.getOrderId() + " for " + front.getCustomerName() + " was cancelled.");
-                mainFrame.refreshAll();
-            } else {
-                mainFrame.setFeedback(false, result.getMessage());
+        processingAction = true;
+        try {
+            if (service.getOrderQueue().isEmpty()) {
+                mainFrame.setFeedback(false, "No orders waiting to cancel.");
+                return;
             }
+
+            Order front = service.getOrderQueue().peek();
+            Product p = service.findProduct(front.getSkuId());
+            String productName = p != null ? p.getName() : "Item #" + front.getSkuId();
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to cancel the next order for " + front.getCustomerName() + " (" + productName + ")?",
+                    "Confirm Cancel Order", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                OpResult result = service.rejectFrontOrder();
+                if (result.isSuccess()) {
+                    mainFrame.setFeedback(true, "Order #" + front.getOrderId() + " for " + front.getCustomerName() + " was cancelled.");
+                    mainFrame.refreshAll();
+                } else {
+                    mainFrame.setFeedback(false, result.getMessage());
+                }
+            }
+        } finally {
+            processingAction = false;
         }
     }
 
