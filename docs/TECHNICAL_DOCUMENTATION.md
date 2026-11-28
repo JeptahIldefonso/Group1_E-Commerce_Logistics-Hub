@@ -45,7 +45,7 @@ We split the code into layers so that button clicks do not contain business rule
 All of this is loaded by `FulfillmentService.loadDefaultSeedData()` when the app opens:
 - **14 products.** We insert them in a chosen order (`500, 300, 700, 200` and so on) so the tree comes out balanced with a height of **4**, instead of a long chain.
 - **0 orders.** The first order you place becomes **`#1001`**, and the stock numbers on screen match the full shelf.
-- **2 restock records** (product `300` with `+20`, product `500` with `+15`) and **5 shipments** (`PKG-501` to `PKG-505`, for orders `#991` to `#995`).
+- **2 restock records** (product `300` with `+20`, product `500` with `+15`) and **0 shipments** (`Shipments` stays empty until an order is actually dispatched, starting at `PKG-501` for order `#1001`).
 
 ---
 

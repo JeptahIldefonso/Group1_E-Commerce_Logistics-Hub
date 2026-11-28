@@ -135,6 +135,7 @@ public class ServiceTest {
             FulfillmentService afterReset = new FulfillmentService(saveFile);
             assert afterReset.getInventoryBst().size() == 14 : "Reset must persist clean 14-item catalog";
             assert afterReset.getOrderQueue().size() == 0 : "Reset must clear pending order queue";
+            assert afterReset.getPackageArray().size() == 0 : "Reset must clear shipment history";
             assert afterReset.findProduct(800).getStockQty() == 8 : "Reset must restore SKU #800 to 8";
         } catch (Exception ex) {
             throw new AssertionError("Persistence test failed: " + ex.getMessage(), ex);

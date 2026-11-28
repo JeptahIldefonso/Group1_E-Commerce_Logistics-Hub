@@ -52,7 +52,7 @@ public class FullSystemCheckupTest {
         check(service.getInventoryBst().size() == 14, "Catalog initialized with exactly 14 seed products");
         check(service.getOrderQueue().size() == 0, "Order queue initialized clean with 0 pending orders");
         check(service.getRestockStack().size() == 2, "Restock stack initialized with 2 audit actions");
-        check(service.getPackageArray().size() == 5, "Freight array initialized with 5 dispatched packages");
+        check(service.getPackageArray().size() == 0, "Freight array initialized clean with 0 fake shipments");
 
         Product p150 = service.findProduct(150);
         check(p150 != null && p150.getName().contains("Webcam"), "SKU #150 resolves to Webcam");
@@ -169,6 +169,18 @@ public class FullSystemCheckupTest {
         System.out.println("\n--- [CHECK 5] Module 4: Custom Sorting Engine ---");
         FulfillmentService service = new FulfillmentService();
 
+        check(service.enqueueOrder("Client A", 150, 1, "Manila Central Hub", 1).isSuccess() && service.dispatchNext(1.45).isSuccess(),
+                "Dispatched test parcel #1 for sorting");
+        check(service.enqueueOrder("Client B", 200, 1, "Quezon City Hub", 3).isSuccess() && service.dispatchNext(0.65).isSuccess(),
+                "Dispatched test parcel #2 for sorting");
+        check(service.enqueueOrder("Client C", 250, 1, "Makati Logistics Hub", 1).isSuccess() && service.dispatchNext(8.20).isSuccess(),
+                "Dispatched test parcel #3 for sorting");
+        check(service.enqueueOrder("Client D", 300, 1, "Manila Central Hub", 3).isSuccess() && service.dispatchNext(15.40).isSuccess(),
+                "Dispatched test parcel #4 for sorting");
+        check(service.enqueueOrder("Client E", 350, 1, "Quezon City Hub", 4).isSuccess() && service.dispatchNext(2.10).isSuccess(),
+                "Dispatched test parcel #5 for sorting");
+        check(service.getPackageArray().size() == 5, "Sorted freight pool populated with 5 real dispatches");
+
         OpResult sortWeightAsc = service.sortPackages(1, 1, true);
         check(sortWeightAsc.isSuccess(), "QuickSort by weight (Ascending) succeeded");
 
@@ -248,6 +260,13 @@ public class FullSystemCheckupTest {
         check(rowWebcam == row150, "Zero-allocation name lookup matches same SKU #150 row");
         check(catalogModel.getValueAt(row150, 2).toString().startsWith("₱"),
                 "Cached price string starts with Peso sign");
+        check(freightModel.getRowCount() == 0, "Freight table starts clean with 0 fake shipments");
+        check(service.enqueueOrder("Dispatch Check", 150, 1, "Manila Central Hub", 1).isSuccess()
+                        && service.dispatchNext(3.25).isSuccess(),
+                "Dispatched test order into freight table");
+        freightModel.fireTableDataChanged();
+        check(freightModel.getRowCount() == 1 && "PKG-501".equals(freightModel.getValueAt(0, 0)),
+                "Shipped order immediately visible as PKG-501 inside FreightTableModel");
         check(freightModel.getValueAt(0, 3).toString().endsWith(" kg"),
                 "Cached freight weight string formatted consistently");
         check(queueModel.getRowCount() == service.getOrderQueue().size(), "Queue table row count matches OrderQueue size");
@@ -290,8 +309,19 @@ public class FullSystemCheckupTest {
             FulfillmentService p2 = new FulfillmentService(db);
             check(p2.getOrderQueue().size() == 1 && p2.getAvailableStock(800) == 4,
                     "Restart reload preserves queued order and 4 available stock");
-            check(p2.resetToDefaultSeedData().isSuccess() && p2.getOrderQueue().size() == 0 && p2.getAvailableStock(800) == 8,
+            FreightTableModel boundFreight = new FreightTableModel(p2.getPackageArray());
+            QueueTableModel boundQueue = new QueueTableModel(p2.getOrderQueue(), p2);
+            check(p2.resetToDefaultSeedData().isSuccess() && p2.getOrderQueue().size() == 0
+                            && p2.getPackageArray().size() == 0 && p2.getAvailableStock(800) == 8,
                     "Reset sample data restores clean seed state on disk");
+            check(p2.enqueueOrder("Post Reset", 150, 1, "Manila Central Hub", 1).isSuccess(),
+                    "Queued order after reset");
+            check(p2.dispatchNext(2.75).isSuccess(), "Dispatched order after reset");
+            boundQueue.fireTableDataChanged();
+            boundFreight.fireTableDataChanged();
+            check(boundQueue.getRowCount() == 0 && boundFreight.getRowCount() == 1
+                            && "#1001".equals(boundFreight.getValueAt(0, 1)),
+                    "Bound table models reflect new shipments cleanly after reset");
         } catch (Exception ex) {
             check(false, "Persistence check threw exception: " + ex.getMessage());
         } finally {
