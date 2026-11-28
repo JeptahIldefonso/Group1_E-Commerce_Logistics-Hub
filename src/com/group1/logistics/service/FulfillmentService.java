@@ -360,7 +360,18 @@ public class FulfillmentService {
     }
 
     public OpResult resetToDefaultSeedData() {
-        initFreshStructures();
+        if (this.orderQueue == null || this.restockStack == null || this.inventoryBst == null || this.packageArray == null) {
+            initFreshStructures();
+        } else {
+            this.orderQueue.clear();
+            this.restockStack.clear();
+            this.inventoryBst.clear();
+            this.packageArray.clear();
+            this.nextOrderId = 1001;
+            this.nextActionId = 1;
+            this.nextPackageId = 501;
+            this.sequenceCounter = 1;
+        }
         loadDefaultSeedData();
         this.startupNotice = null;
         return finalizeMutation(OpResult.ok("Sample data restored to defaults."));
@@ -399,12 +410,6 @@ public class FulfillmentService {
 
             restock(300, 20);
             restock(500, 15);
-
-            packageArray.add(new FreightPackage(nextPackageId++, 991, "Manila Central Hub", 1.45, 1, sequenceCounter++));
-            packageArray.add(new FreightPackage(nextPackageId++, 992, "Quezon City Hub", 0.65, 3, sequenceCounter++));
-            packageArray.add(new FreightPackage(nextPackageId++, 993, "Makati Logistics Hub", 8.20, 1, sequenceCounter++));
-            packageArray.add(new FreightPackage(nextPackageId++, 994, "Manila Central Hub", 15.40, 3, sequenceCounter++));
-            packageArray.add(new FreightPackage(nextPackageId++, 995, "Quezon City Hub", 2.10, 4, sequenceCounter++));
         } finally {
             persistenceSuspended = prevSuspended;
         }
